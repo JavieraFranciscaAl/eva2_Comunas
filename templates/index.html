@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>COMUNAS_NORM — Normalizacion ETL</title>
+  <title>ETL Multi-Modulo — INACAP</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -20,202 +20,123 @@
       --verde:       #1A6B3A;
       --verde-suave: #EAF4EE;
       --amarillo:    #B45309;
+      --azul:        #1D4ED8;
+      --azul-suave:  #EFF6FF;
       --font-body:   'DM Sans', sans-serif;
       --font-mono:   'DM Mono', monospace;
     }
-
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: var(--font-body);
-      background: var(--gris-claro);
-      color: var(--negro);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
+    body { font-family: var(--font-body); background: var(--gris-claro); color: var(--negro); min-height: 100vh; display: flex; flex-direction: column; }
 
     /* HEADER */
-    header {
-      background: var(--rojo);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.18);
-    }
-    .header-inner {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 32px;
-      height: 64px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
+    header { background: var(--rojo); position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,0.18); }
+    .header-inner { max-width: 1200px; margin: 0 auto; padding: 0 32px; height: 64px; display: flex; align-items: center; justify-content: space-between; }
     .header-marca { display: flex; align-items: center; gap: 16px; }
     .header-logo  { font-size: 22px; font-weight: 600; color: var(--blanco); }
     .header-sep   { width: 1px; height: 24px; background: rgba(255,255,255,0.35); }
     .header-sub   { font-size: 13px; color: rgba(255,255,255,0.8); }
-    .header-badge {
-      font-size: 11px; font-weight: 500; color: var(--blanco);
-      background: rgba(255,255,255,0.18); padding: 4px 10px;
-      border-radius: 20px; letter-spacing: 0.5px; text-transform: uppercase;
+    .header-badge { font-size: 11px; font-weight: 500; color: var(--blanco); background: rgba(255,255,255,0.18); padding: 4px 10px; border-radius: 20px; letter-spacing: 0.5px; text-transform: uppercase; }
+
+    /* NAV TABS */
+    .nav-tabs { background: var(--blanco); border-bottom: 1px solid var(--borde); }
+    .nav-tabs-inner { max-width: 1200px; margin: 0 auto; padding: 0 32px; display: flex; gap: 4px; }
+    .tab-btn {
+      padding: 14px 20px; font-family: var(--font-body); font-size: 13px; font-weight: 500;
+      color: var(--gris-medio); background: none; border: none; cursor: pointer;
+      border-bottom: 3px solid transparent; transition: all 0.15s ease; white-space: nowrap;
     }
+    .tab-btn:hover { color: var(--negro); }
+    .tab-btn.activo { color: var(--rojo); border-bottom-color: var(--rojo); }
 
     /* MAIN */
-    main {
-      flex: 1;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 40px 32px 60px;
-      width: 100%;
-    }
+    main { flex: 1; max-width: 1200px; margin: 0 auto; padding: 40px 32px 60px; width: 100%; }
+    .modulo { display: none; }
+    .modulo.activo { display: block; }
 
-    .page-title { margin-bottom: 32px; }
-    .page-title h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.5px; }
-    .page-title p  { margin-top: 6px; font-size: 14px; color: var(--gris-medio); }
+    .page-title { margin-bottom: 28px; }
+    .page-title h2 { font-size: 24px; font-weight: 600; letter-spacing: -0.3px; }
+    .page-title p  { margin-top: 4px; font-size: 13px; color: var(--gris-medio); }
     .rojo { color: var(--rojo); }
 
     /* TARJETA */
-    .card {
-      background: var(--blanco);
-      border: 1px solid var(--borde);
-      border-radius: 10px;
-      padding: 32px;
-      margin-bottom: 24px;
-    }
-    .card-title {
-      font-size: 12px; font-weight: 600; text-transform: uppercase;
-      letter-spacing: 1px; color: var(--gris-medio); margin-bottom: 20px;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .card-title::before {
-      content: ''; display: block; width: 3px; height: 14px;
-      background: var(--rojo); border-radius: 2px;
-    }
+    .card { background: var(--blanco); border: 1px solid var(--borde); border-radius: 10px; padding: 28px; margin-bottom: 20px; }
+    .card-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--gris-medio); margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+    .card-title::before { content: ''; display: block; width: 3px; height: 13px; background: var(--rojo); border-radius: 2px; }
 
     /* DROP ZONE */
-    .drop-zone {
-      border: 2px dashed var(--borde); border-radius: 8px;
-      padding: 48px 32px; text-align: center; cursor: pointer;
-      transition: all 0.2s ease; position: relative;
-    }
-    .drop-zone:hover, .drop-zone.drag-over {
-      border-color: var(--rojo); background: var(--rojo-suave);
-    }
-    .drop-zone input[type="file"] {
-      position: absolute; inset: 0; opacity: 0;
-      cursor: pointer; width: 100%; height: 100%;
-    }
-    .drop-icon {
-      width: 48px; height: 48px; margin: 0 auto 16px;
-      background: var(--gris-claro); border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .drop-icon svg { width: 24px; height: 24px; stroke: var(--rojo); fill: none; stroke-width: 1.8; }
-    .drop-label { font-size: 15px; font-weight: 500; color: var(--gris-oscuro); margin-bottom: 4px; }
-    .drop-hint  { font-size: 13px; color: var(--gris-medio); }
-
-    .archivo-ok {
-      margin-top: 16px; display: none; align-items: center; gap: 10px;
-      background: var(--verde-suave); border: 1px solid #b8ddc8;
-      border-radius: 6px; padding: 10px 14px; font-size: 13px;
-      color: var(--verde); font-weight: 500;
-    }
+    .drop-zone { border: 2px dashed var(--borde); border-radius: 8px; padding: 40px 24px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; }
+    .drop-zone:hover, .drop-zone.drag-over { border-color: var(--rojo); background: var(--rojo-suave); }
+    .drop-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .drop-icon { width: 44px; height: 44px; margin: 0 auto 12px; background: var(--gris-claro); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+    .drop-icon svg { width: 22px; height: 22px; stroke: var(--rojo); fill: none; stroke-width: 1.8; }
+    .drop-label { font-size: 14px; font-weight: 500; color: var(--gris-oscuro); margin-bottom: 4px; }
+    .drop-hint  { font-size: 12px; color: var(--gris-medio); }
+    .archivo-ok { margin-top: 12px; display: none; align-items: center; gap: 8px; background: var(--verde-suave); border: 1px solid #b8ddc8; border-radius: 6px; padding: 8px 12px; font-size: 13px; color: var(--verde); font-weight: 500; }
 
     /* BOTONES */
-    .btn {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 11px 22px; border-radius: 6px; font-family: var(--font-body);
-      font-size: 14px; font-weight: 500; cursor: pointer;
-      border: none; transition: all 0.15s ease; text-decoration: none;
-    }
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 6px; font-family: var(--font-body); font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; text-decoration: none; }
     .btn-primario { background: var(--rojo); color: var(--blanco); }
-    .btn-primario:hover { background: var(--rojo-oscuro); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(204,0,0,0.25); }
+    .btn-primario:hover { background: var(--rojo-oscuro); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(204,0,0,0.2); }
     .btn-primario:disabled { background: #ccc; cursor: not-allowed; transform: none; box-shadow: none; }
     .btn-secundario { background: var(--gris-claro); color: var(--gris-oscuro); border: 1px solid var(--borde); }
     .btn-secundario:hover { background: var(--borde); }
-    .acciones { display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; }
+    .acciones { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
 
     /* PROGRESO */
-    .progreso-wrap { display: none; margin-top: 20px; }
-    .progreso-bg   { height: 4px; background: var(--borde); border-radius: 2px; overflow: hidden; }
-    .progreso-fill { height: 100%; background: var(--rojo); border-radius: 2px; width: 0%; transition: width 0.4s ease; }
-    .progreso-txt  { font-size: 12px; color: var(--gris-medio); margin-top: 6px; }
+    .progreso-wrap { display: none; margin-top: 16px; }
+    .progreso-bg   { height: 3px; background: var(--borde); border-radius: 2px; overflow: hidden; }
+    .progreso-fill { height: 100%; background: var(--rojo); border-radius: 2px; width: 0%; transition: width 0.4s; }
+    .progreso-txt  { font-size: 11px; color: var(--gris-medio); margin-top: 5px; }
 
     /* STATS */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 16px;
-    }
-    .stat-item { background: var(--gris-claro); border-radius: 8px; padding: 20px; text-align: center; }
-    .stat-valor { font-size: 32px; font-weight: 600; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
-    .stat-valor.v-rojo   { color: var(--rojo); }
-    .stat-valor.v-verde  { color: var(--verde); }
-    .stat-valor.v-amari  { color: var(--amarillo); }
-    .stat-etiqueta { font-size: 11px; color: var(--gris-medio); margin-top: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; }
+    .stat-item { background: var(--gris-claro); border-radius: 8px; padding: 16px; text-align: center; }
+    .stat-valor { font-size: 28px; font-weight: 600; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+    .v-rojo  { color: var(--rojo); }
+    .v-verde { color: var(--verde); }
+    .v-amari { color: var(--amarillo); }
+    .v-azul  { color: var(--azul); }
+    .stat-etiqueta { font-size: 10px; color: var(--gris-medio); margin-top: 3px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
 
     /* LOG */
-    .log-pre {
-      background: #111; color: #ddd; font-family: var(--font-mono);
-      font-size: 12px; line-height: 1.7; padding: 20px; border-radius: 6px;
-      overflow: auto; max-height: 240px; white-space: pre;
-    }
+    .log-pre { background: #111; color: #ddd; font-family: var(--font-mono); font-size: 11px; line-height: 1.7; padding: 16px; border-radius: 6px; overflow: auto; max-height: 220px; white-space: pre; }
     .log-mod { color: #FFB347; }
     .log-dup { color: #FF6B6B; }
     .log-sin { color: #666; }
+    .log-desc{ color: #F87171; }
+    .log-cump{ color: #34D399; }
 
-    /* TABLA BD */
-    .tabla-wrap {
-      overflow: auto;
-      max-height: 480px;
-      border-radius: 6px;
-      border: 1px solid var(--borde);
-    }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    /* TABLA */
+    .busqueda-input { width: 100%; padding: 9px 12px; border: 1px solid var(--borde); border-radius: 6px; font-family: var(--font-body); font-size: 13px; outline: none; transition: border-color 0.15s; margin-bottom: 12px; }
+    .busqueda-input:focus { border-color: var(--rojo); }
+    .tabla-wrap { overflow: auto; max-height: 420px; border-radius: 6px; border: 1px solid var(--borde); }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
     thead tr { background: var(--rojo); color: var(--blanco); position: sticky; top: 0; }
-    thead th { padding: 12px 16px; text-align: left; font-weight: 600; font-size: 12px; letter-spacing: 0.5px; }
+    thead th { padding: 10px 14px; text-align: left; font-weight: 600; font-size: 11px; letter-spacing: 0.4px; white-space: nowrap; }
     tbody tr { border-bottom: 1px solid var(--gris-claro); }
     tbody tr:hover { background: var(--rojo-suave); }
-    tbody td { padding: 10px 16px; color: var(--gris-oscuro); }
-    tbody td.mono { font-family: var(--font-mono); }
-    .badge-id {
-      background: var(--gris-claro); border-radius: 4px;
-      padding: 2px 8px; font-family: var(--font-mono);
-      font-size: 11px; color: var(--gris-medio);
-    }
-
-    /* BUSQUEDA */
-    .busqueda-wrap { margin-bottom: 16px; }
-    .busqueda-input {
-      width: 100%; padding: 10px 14px; border: 1px solid var(--borde);
-      border-radius: 6px; font-family: var(--font-body); font-size: 14px;
-      color: var(--negro); outline: none; transition: border-color 0.15s;
-    }
-    .busqueda-input:focus { border-color: var(--rojo); }
+    tbody td { padding: 8px 14px; color: var(--gris-oscuro); }
+    .mono { font-family: var(--font-mono); }
+    .badge-id { background: var(--gris-claro); border-radius: 4px; padding: 2px 6px; font-family: var(--font-mono); font-size: 10px; color: var(--gris-medio); }
+    .badge-si { background: #D1FAE5; color: #065F46; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 600; }
+    .badge-no { background: var(--gris-claro); color: var(--gris-medio); border-radius: 4px; padding: 2px 8px; font-size: 10px; }
 
     /* DESCARGAS */
-    .descarga-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .descarga-item { border: 1px solid var(--borde); border-radius: 8px; padding: 20px; }
-    .descarga-nombre { font-size: 14px; font-weight: 600; font-family: var(--font-mono); margin-bottom: 6px; }
-    .descarga-desc   { font-size: 12px; color: var(--gris-medio); margin-bottom: 12px; }
+    .descarga-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+    .descarga-item { border: 1px solid var(--borde); border-radius: 8px; padding: 18px; }
+    .descarga-nombre { font-size: 13px; font-weight: 600; font-family: var(--font-mono); margin-bottom: 4px; }
+    .descarga-desc   { font-size: 11px; color: var(--gris-medio); margin-bottom: 10px; }
 
     .resultado-section { display: none; }
 
     /* FOOTER */
-    footer {
-      background: var(--blanco); border-top: 1px solid var(--borde);
-      padding: 16px 32px; text-align: center;
-      font-size: 12px; color: var(--gris-medio);
-    }
+    footer { background: var(--blanco); border-top: 1px solid var(--borde); padding: 14px 32px; text-align: center; font-size: 11px; color: var(--gris-medio); }
     footer span { color: var(--rojo); font-weight: 500; }
 
     @media (max-width: 640px) {
-      .descarga-grid { grid-template-columns: 1fr; }
-      .header-badge  { display: none; }
-      main { padding: 24px 16px 40px; }
-      .card { padding: 20px; }
+      .header-badge { display: none; }
+      main { padding: 20px 16px 40px; }
+      .card { padding: 18px; }
     }
   </style>
 </head>
@@ -228,248 +149,314 @@
       <div class="header-sep"></div>
       <span class="header-sub">Arquitectura y Almacenamiento de Datos</span>
     </div>
-    <span class="header-badge">Evaluacion 2 — Parte 1</span>
+    <span class="header-badge">Evaluacion 2</span>
   </div>
 </header>
 
+<div class="nav-tabs">
+  <div class="nav-tabs-inner">
+    <button class="tab-btn activo" onclick="cambiarTab('comunas', this)">Comunas</button>
+    <button class="tab-btn" onclick="cambiarTab('famosos', this)">Famosos</button>
+    <button class="tab-btn" onclick="cambiarTab('lugares', this)">Lugares</button>
+  </div>
+</div>
+
 <main>
-  <div class="page-title">
-    <h1>COMUNAS<span class="rojo">_NORM</span></h1>
-    <p>Normalizacion, limpieza y carga en base de datos SQLite</p>
+
+  <!-- ── MODULO 1: COMUNAS ─────────────────────────────────────────────────── -->
+  <div class="modulo activo" id="mod-comunas">
+    <div class="page-title">
+      <h2>COMUNAS<span class="rojo">_NORM</span></h2>
+      <p>Normalizacion, limpieza y deduplicacion de comunas chilenas</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Cargar Dataset</div>
+      <div class="drop-zone" id="dz-comunas">
+        <input type="file" id="fi-comunas" accept=".txt,.csv" />
+        <div class="drop-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+        <div class="drop-label">Arrastra tu archivo o haz clic</div>
+        <div class="drop-hint">.txt o .csv</div>
+      </div>
+      <div class="archivo-ok" id="ao-comunas"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><span id="fn-comunas"></span></div>
+      <div class="progreso-wrap" id="pw-comunas"><div class="progreso-bg"><div class="progreso-fill" id="pf-comunas"></div></div><div class="progreso-txt" id="pt-comunas">Procesando...</div></div>
+      <div class="acciones"><button class="btn btn-primario" id="btn-comunas" disabled onclick="procesar('comunas')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Ejecutar ETL</button></div>
+    </div>
+    <div class="resultado-section" id="res-comunas">
+      <div class="card">
+        <div class="card-title">Estadisticas</div>
+        <div class="stats-grid">
+          <div class="stat-item"><div class="stat-valor" id="sc-entrada">0</div><div class="stat-etiqueta">Entrada</div></div>
+          <div class="stat-item"><div class="stat-valor v-amari" id="sc-modif">0</div><div class="stat-etiqueta">Modificados</div></div>
+          <div class="stat-item"><div class="stat-valor v-rojo" id="sc-duplic">0</div><div class="stat-etiqueta">Duplicados</div></div>
+          <div class="stat-item"><div class="stat-valor v-verde" id="sc-result">0</div><div class="stat-etiqueta">En BD</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Tabla COMUNAS_NORM — SQLite</div>
+        <input class="busqueda-input" type="text" placeholder="Buscar comuna..." oninput="filtrar('comunas')" id="bq-comunas" />
+        <div class="tabla-wrap"><table><thead><tr><th>#</th><th>ID</th><th>Nombre</th><th>Fecha Carga</th></tr></thead><tbody id="tb-comunas"></tbody></table></div>
+        <p style="font-size:11px;color:var(--gris-medio);margin-top:8px">Mostrando <span id="tv-comunas">0</span> de <span id="tt-comunas">0</span> registros</p>
+      </div>
+      <div class="card"><div class="card-title">Log de Cambios</div><div class="log-pre" id="lp-comunas"></div></div>
+      <div class="card">
+        <div class="card-title">Descargar</div>
+        <div class="descarga-grid">
+          <div class="descarga-item"><div class="descarga-nombre">COMUNAS_NORM.csv</div><div class="descarga-desc">Dataset normalizado desde SQLite</div><a class="btn btn-primario" href="/comunas/descargar/csv"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>CSV</a></div>
+          <div class="descarga-item"><div class="descarga-nombre">COMUNAS_LOG.txt</div><div class="descarga-desc">Registro de transformaciones</div><a class="btn btn-secundario" href="/comunas/descargar/log"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Log</a></div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- CARGA -->
-  <div class="card">
-    <div class="card-title">Cargar Dataset</div>
-    <div class="drop-zone" id="dropZone">
-      <input type="file" id="archivoInput" accept=".txt,.csv" />
-      <div class="drop-icon">
-        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+  <!-- ── MODULO 2: FAMOSOS ─────────────────────────────────────────────────── -->
+  <div class="modulo" id="mod-famosos">
+    <div class="page-title">
+      <h2>FAMOSOS<span class="rojo">_NORM</span></h2>
+      <p>Normalizacion de fechas a DD-MM-YYYY, calculo de edad y flag de cumpleanos</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Cargar Dataset</div>
+      <div class="drop-zone" id="dz-famosos">
+        <input type="file" id="fi-famosos" accept=".txt,.csv" />
+        <div class="drop-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+        <div class="drop-label">Arrastra tu archivo o haz clic</div>
+        <div class="drop-hint">.txt o .csv</div>
       </div>
-      <div class="drop-label">Arrastra tu archivo aqui o haz clic para seleccionar</div>
-      <div class="drop-hint">Formatos: .txt o .csv — compatible con cualquier dataset de comunas</div>
+      <div class="archivo-ok" id="ao-famosos"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><span id="fn-famosos"></span></div>
+      <div class="progreso-wrap" id="pw-famosos"><div class="progreso-bg"><div class="progreso-fill" id="pf-famosos"></div></div><div class="progreso-txt" id="pt-famosos">Procesando...</div></div>
+      <div class="acciones"><button class="btn btn-primario" id="btn-famosos" disabled onclick="procesar('famosos')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Ejecutar ETL</button></div>
     </div>
-    <div class="archivo-ok" id="archivoOk">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-      <span id="nombreArchivo">—</span>
-    </div>
-    <div class="progreso-wrap" id="progresoWrap">
-      <div class="progreso-bg"><div class="progreso-fill" id="progresoFill"></div></div>
-      <div class="progreso-txt" id="progresoTxt">Procesando...</div>
-    </div>
-    <div class="acciones">
-      <button class="btn btn-primario" id="btnProcesar" disabled onclick="procesarArchivo()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        Ejecutar ETL y cargar en BD
-      </button>
+    <div class="resultado-section" id="res-famosos">
+      <div class="card">
+        <div class="card-title">Estadisticas</div>
+        <div class="stats-grid">
+          <div class="stat-item"><div class="stat-valor" id="sf-entrada">0</div><div class="stat-etiqueta">Entrada</div></div>
+          <div class="stat-item"><div class="stat-valor v-rojo" id="sf-duplic">0</div><div class="stat-etiqueta">Duplicados</div></div>
+          <div class="stat-item"><div class="stat-valor v-amari" id="sf-descar">0</div><div class="stat-etiqueta">Descartados</div></div>
+          <div class="stat-item"><div class="stat-valor v-verde" id="sf-result">0</div><div class="stat-etiqueta">En BD</div></div>
+          <div class="stat-item"><div class="stat-valor v-azul" id="sf-cumple">0</div><div class="stat-etiqueta">Cumplen hoy</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Tabla FAMOSOS_NORM — SQLite</div>
+        <input class="busqueda-input" type="text" placeholder="Buscar famoso..." oninput="filtrar('famosos')" id="bq-famosos" />
+        <div class="tabla-wrap"><table><thead><tr><th>#</th><th>ID</th><th>Nombre</th><th>Fecha Nacimiento</th><th>Edad</th><th>Cumpleanos Hoy</th></tr></thead><tbody id="tb-famosos"></tbody></table></div>
+        <p style="font-size:11px;color:var(--gris-medio);margin-top:8px">Mostrando <span id="tv-famosos">0</span> de <span id="tt-famosos">0</span> registros</p>
+      </div>
+      <div class="card"><div class="card-title">Log de Cambios</div><div class="log-pre" id="lp-famosos"></div></div>
+      <div class="card">
+        <div class="card-title">Descargar</div>
+        <div class="descarga-grid">
+          <div class="descarga-item"><div class="descarga-nombre">FAMOSOS_NORM.csv</div><div class="descarga-desc">Dataset normalizado desde SQLite</div><a class="btn btn-primario" href="/famosos/descargar/csv"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>CSV</a></div>
+          <div class="descarga-item"><div class="descarga-nombre">FAMOSOS_LOG.txt</div><div class="descarga-desc">Registro de transformaciones</div><a class="btn btn-secundario" href="/famosos/descargar/log"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Log</a></div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- RESULTADOS -->
-  <div class="resultado-section" id="resultadoSection">
-
-    <!-- STATS -->
+  <!-- ── MODULO 3: LUGARES ─────────────────────────────────────────────────── -->
+  <div class="modulo" id="mod-lugares">
+    <div class="page-title">
+      <h2>LUGARES<span class="rojo">_NORM</span></h2>
+      <p>Normalizacion y separacion en tres tablas: Lugares, Georeferencias, Direcciones</p>
+    </div>
     <div class="card">
-      <div class="card-title">Estadisticas del Proceso ETL</div>
-      <div class="stats-grid">
-        <div class="stat-item">
-          <div class="stat-valor" id="stEntrada">0</div>
-          <div class="stat-etiqueta">Registros de entrada</div>
+      <div class="card-title">Cargar Dataset</div>
+      <div class="drop-zone" id="dz-lugares">
+        <input type="file" id="fi-lugares" accept=".txt,.csv" />
+        <div class="drop-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+        <div class="drop-label">Arrastra tu archivo o haz clic</div>
+        <div class="drop-hint">.txt o .csv separado por punto y coma</div>
+      </div>
+      <div class="archivo-ok" id="ao-lugares"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><span id="fn-lugares"></span></div>
+      <div class="progreso-wrap" id="pw-lugares"><div class="progreso-bg"><div class="progreso-fill" id="pf-lugares"></div></div><div class="progreso-txt" id="pt-lugares">Procesando...</div></div>
+      <div class="acciones"><button class="btn btn-primario" id="btn-lugares" disabled onclick="procesar('lugares')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Ejecutar ETL</button></div>
+    </div>
+    <div class="resultado-section" id="res-lugares">
+      <div class="card">
+        <div class="card-title">Estadisticas</div>
+        <div class="stats-grid">
+          <div class="stat-item"><div class="stat-valor" id="sl-entrada">0</div><div class="stat-etiqueta">Entrada</div></div>
+          <div class="stat-item"><div class="stat-valor v-rojo" id="sl-duplic">0</div><div class="stat-etiqueta">Duplicados</div></div>
+          <div class="stat-item"><div class="stat-valor v-verde" id="sl-result">0</div><div class="stat-etiqueta">En BD</div></div>
         </div>
-        <div class="stat-item">
-          <div class="stat-valor v-amari" id="stModif">0</div>
-          <div class="stat-etiqueta">Modificados</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-valor v-rojo" id="stDuplic">0</div>
-          <div class="stat-etiqueta">Duplicados eliminados</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-valor v-verde" id="stResultado">0</div>
-          <div class="stat-etiqueta">Cargados en BD</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Tabla Lugares + Georeferencias + Direcciones — SQLite</div>
+        <input class="busqueda-input" type="text" placeholder="Buscar lugar..." oninput="filtrar('lugares')" id="bq-lugares" />
+        <div class="tabla-wrap"><table><thead><tr><th>#</th><th>ID</th><th>Nombre</th><th>Latitud</th><th>Longitud</th><th>Calle</th><th>Numero</th><th>Ciudad/Estado</th><th>Pais</th></tr></thead><tbody id="tb-lugares"></tbody></table></div>
+        <p style="font-size:11px;color:var(--gris-medio);margin-top:8px">Mostrando <span id="tv-lugares">0</span> de <span id="tt-lugares">0</span> registros</p>
+      </div>
+      <div class="card"><div class="card-title">Log de Cambios</div><div class="log-pre" id="lp-lugares"></div></div>
+      <div class="card">
+        <div class="card-title">Descargar</div>
+        <div class="descarga-grid">
+          <div class="descarga-item"><div class="descarga-nombre">LUGARES_LOG.txt</div><div class="descarga-desc">Registro de transformaciones y deduplicacion</div><a class="btn btn-secundario" href="/lugares/descargar/log"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Log</a></div>
         </div>
       </div>
     </div>
-
-    <!-- TABLA DESDE BD -->
-    <div class="card">
-      <div class="card-title">Datos en la Base de Datos — Tabla COMUNAS_NORM (SQLite)</div>
-      <div class="busqueda-wrap">
-        <input class="busqueda-input" id="busqueda" type="text"
-               placeholder="Buscar comuna..." oninput="filtrarTabla()" />
-      </div>
-      <div class="tabla-wrap">
-        <table id="tablaComunas">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>ID (BD)</th>
-              <th>Nombre</th>
-              <th>Fecha de Carga</th>
-            </tr>
-          </thead>
-          <tbody id="tablaCuerpo"></tbody>
-        </table>
-      </div>
-      <p style="font-size:12px; color:var(--gris-medio); margin-top:10px;">
-        Mostrando <span id="totalVisible">0</span> de <span id="totalBD">0</span> registros leidos desde SQLite.
-      </p>
-    </div>
-
-    <!-- LOG -->
-    <div class="card">
-      <div class="card-title">Log de Cambios — Vista Previa</div>
-      <div class="log-pre" id="logPre"></div>
-    </div>
-
-    <!-- DESCARGAS -->
-    <div class="card">
-      <div class="card-title">Descargar Archivos</div>
-      <div class="descarga-grid">
-        <div class="descarga-item">
-          <div class="descarga-nombre">COMUNAS_NORM.csv</div>
-          <div class="descarga-desc">CSV exportado desde la base de datos SQLite con los registros normalizados.</div>
-          <a class="btn btn-primario" href="/descargar/csv">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Descargar CSV
-          </a>
-        </div>
-        <div class="descarga-item">
-          <div class="descarga-nombre">COMUNAS_NORM_LOG.txt</div>
-          <div class="descarga-desc">Registro completo de cada transformacion: modificaciones, duplicados y registros sin cambio.</div>
-          <a class="btn btn-secundario" href="/descargar/log">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Descargar Log
-          </a>
-        </div>
-      </div>
-    </div>
-
   </div>
+
 </main>
 
 <footer>
-  <span>COMUNAS_NORM</span> &nbsp;|&nbsp; Javiera Francisca Alarcon Albornoz
-  &nbsp;|&nbsp; INACAP Concepcion &nbsp;|&nbsp; Arquitectura y Almacenamiento de Datos 2026
+  <span>ETL Multi-Modulo</span> &nbsp;|&nbsp; Javiera Francisca Alarcon Albornoz &nbsp;|&nbsp; INACAP Concepcion &nbsp;|&nbsp; Arquitectura y Almacenamiento de Datos 2026
 </footer>
 
 <script>
-  // ── ARCHIVO ────────────────────────────────────────────────────────────────
-  const input    = document.getElementById("archivoInput");
-  const dropZone = document.getElementById("dropZone");
-  const btnProc  = document.getElementById("btnProcesar");
+  // ── NAVEGACION ─────────────────────────────────────────────────────────────
+  function cambiarTab(modulo, btn) {
+    document.querySelectorAll('.modulo').forEach(m => m.classList.remove('activo'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('activo'));
+    document.getElementById('mod-' + modulo).classList.add('activo');
+    btn.classList.add('activo');
+  }
 
-  input.addEventListener("change", () => {
-    if (input.files.length > 0) {
-      document.getElementById("nombreArchivo").textContent = input.files[0].name;
-      document.getElementById("archivoOk").style.display = "flex";
-      btnProc.disabled = false;
-    }
+  // ── DATOS EN MEMORIA ────────────────────────────────────────────────────────
+  const datos = { comunas: [], famosos: [], lugares: [] };
+
+  // ── SETUP DROP ZONES ────────────────────────────────────────────────────────
+  ['comunas', 'famosos', 'lugares'].forEach(mod => {
+    const input = document.getElementById('fi-' + mod);
+    const dz    = document.getElementById('dz-' + mod);
+    const btn   = document.getElementById('btn-' + mod);
+
+    input.addEventListener('change', () => {
+      if (input.files.length > 0) {
+        document.getElementById('fn-' + mod).textContent = input.files[0].name;
+        document.getElementById('ao-' + mod).style.display = 'flex';
+        btn.disabled = false;
+      }
+    });
+    dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('drag-over'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+    dz.addEventListener('drop', e => {
+      e.preventDefault(); dz.classList.remove('drag-over');
+      if (e.dataTransfer.files.length > 0) {
+        input.files = e.dataTransfer.files;
+        input.dispatchEvent(new Event('change'));
+      }
+    });
   });
 
-  dropZone.addEventListener("dragover",  e => { e.preventDefault(); dropZone.classList.add("drag-over"); });
-  dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag-over"));
-  dropZone.addEventListener("drop", e => {
-    e.preventDefault();
-    dropZone.classList.remove("drag-over");
-    if (e.dataTransfer.files.length > 0) {
-      input.files = e.dataTransfer.files;
-      input.dispatchEvent(new Event("change"));
-    }
-  });
-
-  // ── PROCESAR ───────────────────────────────────────────────────────────────
-  async function procesarArchivo() {
+  // ── PROCESAR ────────────────────────────────────────────────────────────────
+  async function procesar(mod) {
+    const input = document.getElementById('fi-' + mod);
     if (!input.files.length) return;
 
-    const pw    = document.getElementById("progresoWrap");
-    const fill  = document.getElementById("progresoFill");
-    const txt   = document.getElementById("progresoTxt");
+    const pf  = document.getElementById('pf-' + mod);
+    const pt  = document.getElementById('pt-' + mod);
+    const pw  = document.getElementById('pw-' + mod);
+    const btn = document.getElementById('btn-' + mod);
 
-    pw.style.display = "block";
-    btnProc.disabled = true;
-
-    fill.style.width = "20%"; txt.textContent = "Leyendo archivo...";
-    await delay(200);
-    fill.style.width = "50%"; txt.textContent = "Normalizando datos...";
+    pw.style.display = 'block';
+    btn.disabled = true;
+    pf.style.width = '30%'; pt.textContent = 'Leyendo archivo...';
 
     const form = new FormData();
-    form.append("archivo", input.files[0]);
+    form.append('archivo', input.files[0]);
 
     try {
-      const resp = await fetch("/procesar", { method: "POST", body: form });
+      pf.style.width = '60%'; pt.textContent = 'Normalizando...';
+      const resp = await fetch('/' + mod + '/procesar', { method: 'POST', body: form });
       const data = await resp.json();
+      if (data.error) { alert('Error: ' + data.error); btn.disabled = false; return; }
 
-      if (data.error) { alert("Error: " + data.error); btnProc.disabled = false; return; }
+      pf.style.width = '85%'; pt.textContent = 'Consultando base de datos...';
+      await cargarTabla(mod);
 
-      fill.style.width = "80%"; txt.textContent = "Cargando en base de datos...";
-      await delay(300);
-
-      // Stats
-      document.getElementById("stEntrada").textContent  = fmt(data.estadisticas.entrada);
-      document.getElementById("stModif").textContent    = fmt(data.estadisticas.modificados);
-      document.getElementById("stDuplic").textContent   = fmt(data.estadisticas.duplicados);
-      document.getElementById("stResultado").textContent = fmt(data.estadisticas.resultado);
+      // Stats por modulo
+      if (mod === 'comunas') {
+        set('sc-entrada', data.estadisticas.entrada);
+        set('sc-modif',   data.estadisticas.modificados);
+        set('sc-duplic',  data.estadisticas.duplicados);
+        set('sc-result',  data.estadisticas.resultado);
+      } else if (mod === 'famosos') {
+        set('sf-entrada', data.estadisticas.entrada);
+        set('sf-duplic',  data.estadisticas.duplicados);
+        set('sf-descar',  data.estadisticas.descartados);
+        set('sf-result',  data.estadisticas.resultado);
+        set('sf-cumple',  data.estadisticas.cumpleanios_hoy);
+      } else {
+        set('sl-entrada', data.estadisticas.entrada);
+        set('sl-duplic',  data.estadisticas.duplicados);
+        set('sl-result',  data.estadisticas.resultado);
+      }
 
       // Log
-      const logEl = document.getElementById("logPre");
+      const logEl = document.getElementById('lp-' + mod);
       logEl.innerHTML = data.log_preview.map(l => {
-        if (l.includes("MODIFICADO")) return `<span class="log-mod">${esc(l)}</span>`;
-        if (l.includes("DUPLICADO"))  return `<span class="log-dup">${esc(l)}</span>`;
-        if (l.includes("SIN CAMBIO")) return `<span class="log-sin">${esc(l)}</span>`;
+        if (l.includes('MODIFICADO')) return `<span class="log-mod">${esc(l)}</span>`;
+        if (l.includes('DUPLICADO'))  return `<span class="log-dup">${esc(l)}</span>`;
+        if (l.includes('DESCARTADO')) return `<span class="log-desc">${esc(l)}</span>`;
+        if (l.includes('CUMPLEANOS')) return `<span class="log-cump">${esc(l)}</span>`;
+        if (l.includes('SIN CAMBIO')) return `<span class="log-sin">${esc(l)}</span>`;
         return esc(l);
-      }).join("\n");
+      }).join('\n');
 
-      // Leer tabla desde BD
-      fill.style.width = "95%"; txt.textContent = "Consultando base de datos...";
-      await cargarTabla();
+      pf.style.width = '100%'; pt.textContent = 'Completado.';
+      document.getElementById('res-' + mod).style.display = 'block';
+      document.getElementById('res-' + mod).scrollIntoView({ behavior: 'smooth' });
+      btn.disabled = false;
 
-      fill.style.width = "100%"; txt.textContent = "Proceso completado.";
+    } catch(err) { alert('Error: ' + err.message); btn.disabled = false; }
+  }
 
-      document.getElementById("resultadoSection").style.display = "block";
-      document.getElementById("resultadoSection").scrollIntoView({ behavior: "smooth" });
-      btnProc.disabled = false;
+  // ── CARGAR TABLA ────────────────────────────────────────────────────────────
+  async function cargarTabla(mod) {
+    const resp = await fetch('/' + mod + '/datos');
+    const data = await resp.json();
+    datos[mod] = data.datos;
+    document.getElementById('tt-' + mod).textContent = data.total;
+    renderTabla(mod, datos[mod]);
+  }
 
-    } catch (err) {
-      alert("Error de conexion: " + err.message);
-      btnProc.disabled = false;
+  function renderTabla(mod, lista) {
+    const tbody = document.getElementById('tb-' + mod);
+    document.getElementById('tv-' + mod).textContent = lista.length;
+
+    if (mod === 'comunas') {
+      tbody.innerHTML = lista.map((r, i) => `<tr>
+        <td class="mono" style="color:var(--gris-medio)">${i+1}</td>
+        <td><span class="badge-id">${r.id}</span></td>
+        <td>${esc(r.nombre)}</td>
+        <td class="mono" style="color:var(--gris-medio);font-size:10px">${r.fecha_carga}</td>
+      </tr>`).join('');
+
+    } else if (mod === 'famosos') {
+      tbody.innerHTML = lista.map((r, i) => `<tr>
+        <td class="mono" style="color:var(--gris-medio)">${i+1}</td>
+        <td><span class="badge-id">${r.id}</span></td>
+        <td>${esc(r.nombre)}</td>
+        <td class="mono">${r.fecha_nacimiento}</td>
+        <td class="mono" style="text-align:center">${r.edad ?? '—'}</td>
+        <td style="text-align:center">${r.cumpleanios ? '<span class="badge-si">HOY</span>' : '<span class="badge-no">No</span>'}</td>
+      </tr>`).join('');
+
+    } else {
+      tbody.innerHTML = lista.map((r, i) => `<tr>
+        <td class="mono" style="color:var(--gris-medio)">${i+1}</td>
+        <td><span class="badge-id">${r.id}</span></td>
+        <td>${esc(r.nombre)}</td>
+        <td class="mono" style="font-size:10px">${r.latitud ?? '—'}</td>
+        <td class="mono" style="font-size:10px">${r.longitud ?? '—'}</td>
+        <td style="font-size:11px">${esc(r.nombre_calle || '—')}</td>
+        <td class="mono" style="font-size:11px">${esc(r.numero_calle || '—')}</td>
+        <td style="font-size:11px">${esc(r.ciudad_estado_provincia || '—')}</td>
+        <td style="font-size:11px">${esc(r.pais || '—')}</td>
+      </tr>`).join('');
     }
   }
 
-  // ── TABLA DESDE BD ─────────────────────────────────────────────────────────
-  let todasLasComunas = [];
-
-  async function cargarTabla() {
-    const resp = await fetch("/comunas");
-    const data = await resp.json();
-    todasLasComunas = data.comunas;
-    document.getElementById("totalBD").textContent = data.total;
-    renderizarTabla(todasLasComunas);
-  }
-
-  function renderizarTabla(lista) {
-    const tbody = document.getElementById("tablaCuerpo");
-    tbody.innerHTML = lista.map((c, i) => `
-      <tr>
-        <td class="mono" style="color:var(--gris-medio)">${i + 1}</td>
-        <td><span class="badge-id">${c.id}</span></td>
-        <td>${esc(c.nombre)}</td>
-        <td class="mono" style="color:var(--gris-medio); font-size:11px">${c.fecha_carga}</td>
-      </tr>
-    `).join("");
-    document.getElementById("totalVisible").textContent = lista.length;
-  }
-
-  function filtrarTabla() {
-    const q = document.getElementById("busqueda").value.toLowerCase();
-    const filtrados = todasLasComunas.filter(c => c.nombre.toLowerCase().includes(q));
-    renderizarTabla(filtrados);
+  function filtrar(mod) {
+    const q = document.getElementById('bq-' + mod).value.toLowerCase();
+    const filtrados = datos[mod].filter(r => r.nombre.toLowerCase().includes(q));
+    renderTabla(mod, filtrados);
   }
 
   // ── HELPERS ────────────────────────────────────────────────────────────────
-  const fmt  = n => Number(n).toLocaleString("es-CL");
-  const delay = ms => new Promise(r => setTimeout(r, ms));
-  const esc  = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  const set  = (id, v) => { document.getElementById(id).textContent = Number(v).toLocaleString('es-CL'); };
+  const esc  = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 </script>
 </body>
 </html>

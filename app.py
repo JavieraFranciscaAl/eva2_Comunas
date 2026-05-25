@@ -1,14 +1,12 @@
 """
-COMUNAS_NORM - Aplicacion ETL de Normalizacion de Datos
-Arquitectura y Almacenamiento de Datos - INACAP Concepcion
+ETL MULTI-MODULO - Arquitectura y Almacenamiento de Datos
+INACAP Concepcion - Evaluacion 2 (Parte 1 y Parte 2)
 Autora: Javiera Francisca Alarcon Albornoz
 
-Pipeline completo:
-  1. Carga del archivo CSV/TXT desde la interfaz web
-  2. Normalizacion (unificar formato, quitar tildes, eliminar duplicados)
-  3. Carga de registros limpios en base de datos SQLite (tabla COMUNAS_NORM)
-  4. Exposicion de los datos desde la BD via endpoint REST
-  5. Log de cambios descargable
+Modulos:
+  1. COMUNAS_NORM  — normalizacion de comunas chilenas
+  2. FAMOSOS_NORM  — normalizacion de fechas, calculo de edad y flag cumpleanos
+  3. LUGARES_NORM  — normalizacion y separacion en tres tablas relacionadas
 """
 
 import os
@@ -16,25 +14,25 @@ import re
 import io
 import sqlite3
 import unicodedata
-from datetime import datetime
+from datetime import datetime, date
 from flask import Flask, render_template, request, jsonify, send_file
 
 app = Flask(__name__)
 
 # ── CONFIGURACION ─────────────────────────────────────────────────────────────
-BASE_DIR = "/tmp/comunas_norm"
-DB_PATH  = f"{BASE_DIR}/comunas_norm.db"
-LOG_PATH = f"{BASE_DIR}/COMUNAS_NORM_LOG.txt"
-
+BASE_DIR = "/tmp/etl_norm"
+DB_PATH  = f"{BASE_DIR}/etl_norm.db"
 os.makedirs(BASE_DIR, exist_ok=True)
 
+HOY = date.today()
 
-# ── BASE DE DATOS ─────────────────────────────────────────────────────────────
+
+# ══════════════════════════════════════════════════════════════════════════════
+# BASE DE DATOS
+# ══════════════════════════════════════════════════════════════════════════════
 
 def get_db():
-    """
-    Abre conexion a SQLite. row_factory permite leer columnas por nombre.
-    """
+    """Abre conexion SQLite con acceso por nombre de columna."""
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
@@ -42,240 +40,470 @@ def get_db():
 
 def inicializar_db():
     """
-    Crea la tabla COMUNAS_NORM si no existe.
-    Esquema:
-        id          INTEGER  clave primaria autoincremental
-        nombre      TEXT     nombre normalizado (restriccion UNIQUE)
-        fecha_carga TEXT     timestamp del proceso ETL
+    Crea todas las tablas si no existen.
+    Tablas:
+      COMUNAS_NORM   — id, nombre, fecha_carga
+      FAMOSOS_NORM   — id, nombre, fecha_nacimiento, edad, cumpleanios, fecha_carga
+      Lugares        — id, nombre
+      Georeferencias — id, id_lugar, latitud, longitud
+      Direcciones    — id, id_lugar, nombre_calle, numero_calle, ciudad_estado_provincia, pais
     """
     with get_db() as conn:
-        conn.execute("""
+        conn.executescript("""
             CREATE TABLE IF NOT EXISTS COMUNAS_NORM (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
                 nombre      TEXT    NOT NULL UNIQUE,
                 fecha_carga TEXT    NOT NULL
-            )
+            );
+            CREATE TABLE IF NOT EXISTS FAMOSOS_NORM (
+                id               INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre           TEXT    NOT NULL UNIQUE,
+                fecha_nacimiento TEXT    NOT NULL,
+                edad             INTEGER,
+                cumpleanios      INTEGER NOT NULL DEFAULT 0,
+                fecha_carga      TEXT    NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS Lugares (
+                id     INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT    NOT NULL UNIQUE
+            );
+            CREATE TABLE IF NOT EXISTS Georeferencias (
+                id       INTEGER PRIMARY KEY AUTOINCREMENT,
+                id_lugar INTEGER NOT NULL REFERENCES Lugares(id),
+                latitud  REAL    NOT NULL,
+                longitud REAL    NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS Direcciones (
+                id                      INTEGER PRIMARY KEY AUTOINCREMENT,
+                id_lugar                INTEGER NOT NULL REFERENCES Lugares(id),
+                nombre_calle            TEXT,
+                numero_calle            TEXT,
+                ciudad_estado_provincia TEXT,
+                pais                    TEXT
+            );
         """)
         conn.commit()
 
 
-def vaciar_tabla():
-    """
-    Borra todos los registros antes de cada nueva carga.
-    Permite reprocesar distintos datasets sin acumular datos de sesiones anteriores.
-    """
-    with get_db() as conn:
-        conn.execute("DELETE FROM COMUNAS_NORM")
-        conn.commit()
-
-
-def insertar_comunas(comunas, timestamp):
-    """
-    Inserta la lista de comunas normalizadas en COMUNAS_NORM.
-    INSERT OR IGNORE descarta silenciosamente cualquier duplicado residual.
-    """
-    with get_db() as conn:
-        conn.executemany(
-            "INSERT OR IGNORE INTO COMUNAS_NORM (nombre, fecha_carga) VALUES (?, ?)",
-            [(nombre, timestamp) for nombre in comunas]
-        )
-        conn.commit()
-
-
-def leer_comunas_bd():
-    """
-    Retorna todos los registros de COMUNAS_NORM ordenados alfabeticamente.
-    """
-    with get_db() as conn:
-        filas = conn.execute(
-            "SELECT id, nombre, fecha_carga FROM COMUNAS_NORM ORDER BY nombre ASC"
-        ).fetchall()
-    return [dict(f) for f in filas]
-
-
-# ── NORMALIZACION ─────────────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# MODULO 1 — COMUNAS_NORM
+# ══════════════════════════════════════════════════════════════════════════════
 
 def quitar_tildes(texto):
-    """
-    Elimina diacriticos (tildes) usando descomposicion Unicode NFD.
-    Reemplaza explicitamente n/N con tilde (que NFD no elimina sola).
-    Ejemplos: 'Concepcion' <- 'Concepción' | 'Niquen' <- 'Ñiquén'
-    """
+    """Elimina diacriticos usando descomposicion Unicode NFD y reemplaza n con tilde."""
     nfd = unicodedata.normalize("NFD", texto)
     sin_tildes = "".join(c for c in nfd if unicodedata.category(c) != "Mn")
-    sin_tildes = sin_tildes.replace("n\u0303", "n").replace("N\u0303", "N")
     sin_tildes = sin_tildes.replace("ñ", "n").replace("Ñ", "N")
     return sin_tildes
 
 
-def limpiar_texto(texto):
-    """
-    Pipeline de limpieza por registro:
-      1. strip + colapso de espacios multiples
-      2. Eliminacion de tildes y caracteres especiales
-      3. Conversion a formato Titulo
-    Ejemplos:
-      '  los angeles  ' → 'Los Angeles'
-      'CONCEPCIÓN'      → 'Concepcion'
-      'chillán viejo'   → 'Chillan Viejo'
-    """
+def limpiar_comuna(texto):
+    """Limpia una comuna: elimina espacios extra, tildes y aplica formato Titulo."""
     limpio = re.sub(r"\s+", " ", texto.strip())
     limpio = quitar_tildes(limpio)
-    limpio = limpio.title()
-    return limpio
+    return limpio.title()
 
 
-def normalizar_dataset(lineas):
+def etl_comunas(lineas):
     """
-    ETL principal. Procesa todas las lineas del archivo y retorna:
-      resultado    : lista de comunas limpias y unicas
-      log_entries  : lineas del log de auditoria
-      estadisticas : contadores del proceso
-      timestamp    : marca de tiempo del proceso
+    ETL completo para comunas:
+      - Limpia y normaliza cada registro
+      - Deduplica (case-insensitive post-normalizacion)
+      - Registra cada accion en el log
+      - Carga resultado en tabla COMUNAS_NORM
     """
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    log_entries = []
-    log_entries.append("=" * 70)
-    log_entries.append("COMUNAS_NORM — LOG DE NORMALIZACION ETL")
-    log_entries.append(f"Fecha y hora : {timestamp}")
-    log_entries.append(f"Motor BD     : SQLite  |  Tabla: COMUNAS_NORM")
-    log_entries.append("=" * 70)
-    log_entries.append("")
-
-    comunas_vistas = {}
+    log = ["=" * 70, "COMUNAS_NORM — LOG ETL", f"Fecha: {timestamp}", "=" * 70, ""]
+    vistas = {}
     resultado = []
-    total_entrada = total_modif = total_duplic = total_vacios = 0
+    entrada = modif = duplic = vacios = 0
 
-    for i, linea in enumerate(lineas, start=1):
+    for i, linea in enumerate(lineas, 1):
         original = linea.rstrip("\r\n")
-
         if not original.strip():
-            total_vacios += 1
-            log_entries.append(f"[{i:05d}] VACIA      | omitida")
+            vacios += 1
+            log.append(f"[{i:05d}] VACIA      | omitida")
             continue
-
-        total_entrada += 1
-        normalizado = limpiar_texto(original)
-        clave = normalizado.lower()
-
-        if clave in comunas_vistas:
-            total_duplic += 1
-            log_entries.append(
-                f"[{i:05d}] DUPLICADO  | '{original}'"
-                f" → ya existe como '{comunas_vistas[clave]}' — eliminado"
-            )
+        entrada += 1
+        norm = limpiar_comuna(original)
+        clave = norm.lower()
+        if clave in vistas:
+            duplic += 1
+            log.append(f"[{i:05d}] DUPLICADO  | '{original}' ya existe como '{vistas[clave]}'")
             continue
-
-        comunas_vistas[clave] = normalizado
-        resultado.append(normalizado)
-
-        if original != normalizado:
-            total_modif += 1
-            log_entries.append(f"[{i:05d}] MODIFICADO | '{original}' → '{normalizado}'")
+        vistas[clave] = norm
+        resultado.append(norm)
+        if original != norm:
+            modif += 1
+            log.append(f"[{i:05d}] MODIFICADO | '{original}' -> '{norm}'")
         else:
-            log_entries.append(f"[{i:05d}] SIN CAMBIO | '{original}'")
+            log.append(f"[{i:05d}] SIN CAMBIO | '{original}'")
 
-    log_entries.append("")
-    log_entries.append("=" * 70)
-    log_entries.append("RESUMEN")
-    log_entries.append("=" * 70)
-    log_entries.append(f"Registros de entrada      : {total_entrada}")
-    log_entries.append(f"Registros modificados     : {total_modif}")
-    log_entries.append(f"Duplicados eliminados     : {total_duplic}")
-    log_entries.append(f"Lineas vacias omitidas    : {total_vacios}")
-    log_entries.append(f"Registros cargados en BD  : {len(resultado)}")
-    log_entries.append("=" * 70)
+    log += ["", "=" * 70, "RESUMEN",
+            f"Entrada: {entrada} | Modificados: {modif} | Duplicados: {duplic} | Resultado: {len(resultado)}",
+            "=" * 70]
 
-    estadisticas = {
-        "entrada":     total_entrada,
-        "modificados": total_modif,
-        "duplicados":  total_duplic,
-        "vacios":      total_vacios,
-        "resultado":   len(resultado),
-        "timestamp":   timestamp,
-    }
+    with get_db() as conn:
+        conn.execute("DELETE FROM COMUNAS_NORM")
+        conn.executemany(
+            "INSERT OR IGNORE INTO COMUNAS_NORM (nombre, fecha_carga) VALUES (?,?)",
+            [(n, timestamp) for n in resultado]
+        )
+        conn.commit()
 
-    return resultado, log_entries, estadisticas, timestamp
+    with open(f"{BASE_DIR}/comunas_log.txt", "w", encoding="utf-8") as f:
+        f.write("\n".join(log))
+
+    return {"entrada": entrada, "modificados": modif, "duplicados": duplic, "resultado": len(resultado)}, log[:30]
 
 
-# ── RUTAS FLASK ───────────────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# MODULO 2 — FAMOSOS_NORM
+# ══════════════════════════════════════════════════════════════════════════════
+
+def parsear_fecha(texto_fecha):
+    """
+    Convierte una fecha a formato chileno DD-MM-YYYY.
+    Soporta: YYYY/MM/DD, YYYY-MM-DD, DD/MM/YYYY, DD-MM-YYYY.
+    Retorna (fecha_normalizada, anio) o (None, None) si no es parseable.
+    """
+    texto = texto_fecha.strip()
+    # YYYY/MM/DD o YYYY-MM-DD
+    m = re.match(r'^(\d{4})[/-](\d{2})[/-](\d{2})$', texto)
+    if m:
+        anio, mes, dia = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        return f"{dia:02d}-{mes:02d}-{anio}", anio
+    # DD/MM/YYYY o DD-MM-YYYY
+    m = re.match(r'^(\d{2})[/-](\d{2})[/-](\d{4})$', texto)
+    if m:
+        dia, mes, anio = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        return f"{dia:02d}-{mes:02d}-{anio}", anio
+    return None, None
+
+
+def calcular_edad(fecha_str):
+    """Calcula edad en anos desde DD-MM-YYYY hasta hoy."""
+    try:
+        dia, mes, anio = map(int, fecha_str.split("-"))
+        edad = HOY.year - anio
+        if (HOY.month, HOY.day) < (mes, dia):
+            edad -= 1
+        return edad
+    except Exception:
+        return None
+
+
+def es_cumpleanios(fecha_str):
+    """Retorna 1 si hoy coincide con dia y mes de la fecha, 0 si no."""
+    try:
+        dia, mes, _ = map(int, fecha_str.split("-"))
+        return 1 if (HOY.day == dia and HOY.month == mes) else 0
+    except Exception:
+        return 0
+
+
+def etl_famosos(lineas):
+    """
+    ETL para famosos:
+      - Elimina numero de linea al inicio
+      - Parsea y unifica fecha a DD-MM-YYYY
+      - Descarta registros con fechas aproximadas o a.C.
+      - Calcula edad y flag de cumpleanos
+      - Deduplica por nombre
+      - Carga en tabla FAMOSOS_NORM
+    """
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    log = ["=" * 70, "FAMOSOS_NORM — LOG ETL", f"Fecha: {timestamp}", "=" * 70, ""]
+    vistas = {}
+    resultado = []
+    entrada = modif = duplic = descartados = 0
+
+    for i, linea in enumerate(lineas, 1):
+        original = linea.rstrip("\r\n").strip()
+        if not original:
+            continue
+
+        # Eliminar numero al inicio: "1. ", "42. ", etc.
+        limpio = re.sub(r'^\d+\.\s*', '', original)
+
+        # Separar nombre y fecha por ultimo ' - '
+        partes = limpio.rsplit(' - ', 1)
+        if len(partes) != 2:
+            descartados += 1
+            log.append(f"[{i:05d}] NO PARSEABLE | '{original}'")
+            continue
+
+        nombre = partes[0].strip()
+        texto_fecha = partes[1].strip()
+
+        # Descartar fechas aproximadas o a.C.
+        if 'alrededor' in texto_fecha.lower() or 'a.c.' in texto_fecha.lower() or 'a.C.' in texto_fecha:
+            descartados += 1
+            log.append(f"[{i:05d}] DESCARTADO  | '{nombre}' — fecha no procesable: '{texto_fecha}'")
+            continue
+
+        # Parsear fecha
+        fecha_norm, anio = parsear_fecha(texto_fecha)
+        if not fecha_norm:
+            descartados += 1
+            log.append(f"[{i:05d}] DESCARTADO  | '{nombre}' — formato desconocido: '{texto_fecha}'")
+            continue
+
+        # Deduplicar por nombre
+        clave = nombre.lower()
+        if clave in vistas:
+            duplic += 1
+            log.append(f"[{i:05d}] DUPLICADO   | '{nombre}' omitido")
+            continue
+
+        entrada += 1
+        edad = calcular_edad(fecha_norm)
+        cumple = es_cumpleanios(fecha_norm)
+        vistas[clave] = nombre
+        resultado.append((nombre, fecha_norm, edad, cumple, timestamp))
+
+        if texto_fecha != fecha_norm:
+            modif += 1
+            log.append(f"[{i:05d}] MODIFICADO  | '{nombre}' | '{texto_fecha}' -> '{fecha_norm}' | Edad: {edad} | Cumple: {cumple}")
+        else:
+            log.append(f"[{i:05d}] SIN CAMBIO  | '{nombre}' | '{fecha_norm}' | Edad: {edad} | Cumple: {cumple}")
+
+    log += ["", "=" * 70, "RESUMEN",
+            f"Procesados: {entrada} | Modificados: {modif} | Duplicados: {duplic} | Descartados: {descartados}",
+            "=" * 70]
+
+    with get_db() as conn:
+        conn.execute("DELETE FROM FAMOSOS_NORM")
+        conn.executemany(
+            "INSERT OR IGNORE INTO FAMOSOS_NORM (nombre, fecha_nacimiento, edad, cumpleanios, fecha_carga) VALUES (?,?,?,?,?)",
+            resultado
+        )
+        conn.commit()
+
+    with open(f"{BASE_DIR}/famosos_log.txt", "w", encoding="utf-8") as f:
+        f.write("\n".join(log))
+
+    return {"entrada": entrada, "modificados": modif, "duplicados": duplic,
+            "descartados": descartados, "resultado": len(resultado)}, log[:35]
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MODULO 3 — LUGARES_NORM
+# ══════════════════════════════════════════════════════════════════════════════
+
+def parsear_direccion(direccion_raw):
+    """
+    Separa una direccion en componentes:
+      nombre_calle, numero_calle, ciudad_estado_provincia, pais
+    Estrategia:
+      - El pais es el ultimo segmento separado por coma
+      - La ciudad/estado/provincia es el penultimo
+      - El numero de calle es el primer token si es numerico
+    """
+    if not direccion_raw or not direccion_raw.strip():
+        return "", "", "", ""
+    partes = [p.strip() for p in direccion_raw.split(",")]
+    pais          = partes[-1] if len(partes) >= 1 else ""
+    ciudad_estado = partes[-2] if len(partes) >= 2 else ""
+    calle_completa = ", ".join(partes[:-2]) if len(partes) > 2 else (partes[0] if partes else "")
+    tokens = calle_completa.split()
+    if tokens and re.match(r'^\d+', tokens[0]):
+        numero_calle = tokens[0]
+        nombre_calle = " ".join(tokens[1:])
+    else:
+        numero_calle = ""
+        nombre_calle = calle_completa
+    return nombre_calle.strip(), numero_calle.strip(), ciudad_estado.strip(), pais.strip()
+
+
+def contar_campos(direccion):
+    """Cuenta segmentos no vacios en una direccion (para elegir la mas completa)."""
+    return sum(1 for c in direccion.split(",") if c.strip())
+
+
+def etl_lugares(lineas):
+    """
+    ETL para lugares:
+      - Parsea CSV separado por ;
+      - Limpia caracteres corruptos (encoding)
+      - Deduplica por nombre conservando la direccion mas completa
+      - Separa georeferencia en latitud y longitud
+      - Carga en tres tablas: Lugares, Georeferencias, Direcciones
+    """
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    log = ["=" * 70, "LUGARES_NORM — LOG ETL", f"Fecha: {timestamp}", "=" * 70, ""]
+
+    datos_raw = []
+    for i, linea in enumerate(lineas):
+        linea = linea.rstrip("\r\n").strip()
+        if i == 0 or not linea:
+            continue
+        partes = linea.split(";")
+        if len(partes) < 3:
+            continue
+        nombre = partes[0].strip().encode('ascii', 'ignore').decode('ascii')
+        direcc = partes[1].strip().encode('ascii', 'ignore').decode('ascii')
+        georef = partes[2].strip()
+        datos_raw.append((nombre, direcc, georef))
+
+    # Deduplicar conservando la direccion mas completa
+    mejores = {}
+    for nombre, direcc, georef in datos_raw:
+        clave = nombre.lower().strip()
+        if clave not in mejores:
+            mejores[clave] = (nombre, direcc, georef)
+            log.append(f"NUEVO       | '{nombre}'")
+        else:
+            actual = mejores[clave][1]
+            if contar_campos(direcc) > contar_campos(actual):
+                mejores[clave] = (nombre, direcc, georef)
+                log.append(f"REEMPLAZADO | '{nombre}' — direccion mas completa encontrada")
+            else:
+                log.append(f"DUPLICADO   | '{nombre}' — se conserva registro anterior")
+
+    with get_db() as conn:
+        conn.execute("DELETE FROM Direcciones")
+        conn.execute("DELETE FROM Georeferencias")
+        conn.execute("DELETE FROM Lugares")
+        conn.commit()
+
+        for clave, (nombre, direcc, georef) in mejores.items():
+            cur = conn.execute("INSERT INTO Lugares (nombre) VALUES (?)", (nombre,))
+            id_lugar = cur.lastrowid
+
+            try:
+                lat_str, lon_str = georef.split(",")
+                lat = float(lat_str.strip())
+                lon = float(lon_str.strip())
+                conn.execute(
+                    "INSERT INTO Georeferencias (id_lugar, latitud, longitud) VALUES (?,?,?)",
+                    (id_lugar, lat, lon)
+                )
+            except Exception:
+                log.append(f"  GEOREF ERROR | '{nombre}' no parseable: '{georef}'")
+
+            nombre_calle, numero_calle, ciudad_estado, pais = parsear_direccion(direcc)
+            conn.execute(
+                "INSERT INTO Direcciones (id_lugar, nombre_calle, numero_calle, ciudad_estado_provincia, pais) VALUES (?,?,?,?,?)",
+                (id_lugar, nombre_calle, numero_calle, ciudad_estado, pais)
+            )
+
+        conn.commit()
+
+    total = len(mejores)
+    duplicados = len(datos_raw) - total
+    log += ["", "=" * 70, "RESUMEN",
+            f"Entrada: {len(datos_raw)} | Duplicados eliminados: {duplicados} | Cargados en BD: {total}",
+            "=" * 70]
+
+    with open(f"{BASE_DIR}/lugares_log.txt", "w", encoding="utf-8") as f:
+        f.write("\n".join(log))
+
+    return {"entrada": len(datos_raw), "duplicados": duplicados, "resultado": total}, log[:35]
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# RUTAS FLASK
+# ══════════════════════════════════════════════════════════════════════════════
 
 @app.route("/")
 def index():
     return render_template("index.html")
 
+# Modulo 1
+@app.route("/comunas/procesar", methods=["POST"])
+def comunas_procesar():
+    archivo = request.files.get("archivo")
+    if not archivo:
+        return jsonify({"error": "No se recibio archivo"}), 400
+    lineas = archivo.read().decode("utf-8", errors="replace").splitlines()
+    stats, log_preview = etl_comunas(lineas)
+    return jsonify({"estadisticas": stats, "log_preview": log_preview})
 
-@app.route("/procesar", methods=["POST"])
-def procesar():
-    """
-    Recibe el archivo, ejecuta el ETL y carga los datos en SQLite.
-    Flujo: leer archivo → normalizar → vaciar tabla → insertar → guardar log → responder JSON
-    """
-    if "archivo" not in request.files:
-        return jsonify({"error": "No se recibio ningun archivo."}), 400
+@app.route("/comunas/datos")
+def comunas_datos():
+    with get_db() as conn:
+        filas = conn.execute("SELECT id, nombre, fecha_carga FROM COMUNAS_NORM ORDER BY nombre").fetchall()
+    return jsonify({"datos": [dict(f) for f in filas], "total": len(filas)})
 
-    archivo = request.files["archivo"]
-    if archivo.filename == "":
-        return jsonify({"error": "Nombre de archivo vacio."}), 400
+@app.route("/comunas/descargar/csv")
+def comunas_csv():
+    with get_db() as conn:
+        filas = conn.execute("SELECT id, nombre, fecha_carga FROM COMUNAS_NORM ORDER BY nombre").fetchall()
+    lineas = ["id,nombre,fecha_carga"] + [f"{r['id']},{r['nombre']},{r['fecha_carga']}" for r in filas]
+    return send_file(io.BytesIO("\n".join(lineas).encode()), as_attachment=True,
+                     download_name="COMUNAS_NORM.csv", mimetype="text/csv")
 
-    try:
-        contenido = archivo.read().decode("utf-8", errors="replace")
-    except Exception as e:
-        return jsonify({"error": f"Error al leer el archivo: {str(e)}"}), 500
+@app.route("/comunas/descargar/log")
+def comunas_log():
+    ruta = f"{BASE_DIR}/comunas_log.txt"
+    if not os.path.exists(ruta): return "Sin log", 404
+    return send_file(ruta, as_attachment=True, download_name="COMUNAS_LOG.txt")
 
-    lineas = contenido.splitlines()
-    resultado, log_entries, estadisticas, timestamp = normalizar_dataset(lineas)
+# Modulo 2
+@app.route("/famosos/procesar", methods=["POST"])
+def famosos_procesar():
+    archivo = request.files.get("archivo")
+    if not archivo:
+        return jsonify({"error": "No se recibio archivo"}), 400
+    lineas = archivo.read().decode("utf-8", errors="replace").splitlines()
+    stats, log_preview = etl_famosos(lineas)
+    return jsonify({"estadisticas": stats, "log_preview": log_preview})
 
-    # Cargar en SQLite
-    vaciar_tabla()
-    insertar_comunas(resultado, timestamp)
+@app.route("/famosos/datos")
+def famosos_datos():
+    with get_db() as conn:
+        filas = conn.execute(
+            "SELECT id, nombre, fecha_nacimiento, edad, cumpleanios, fecha_carga FROM FAMOSOS_NORM ORDER BY nombre"
+        ).fetchall()
+    return jsonify({"datos": [dict(f) for f in filas], "total": len(filas)})
 
-    # Guardar log
-    with open(LOG_PATH, "w", encoding="utf-8") as f:
-        f.write("\n".join(log_entries))
-
-    return jsonify({
-        "estadisticas": estadisticas,
-        "log_preview":  log_entries[:25],
-    })
-
-
-@app.route("/comunas")
-def comunas():
-    """
-    Lee los registros desde SQLite y los retorna como JSON.
-    La interfaz consume este endpoint para mostrar la tabla completa.
-    """
-    datos = leer_comunas_bd()
-    return jsonify({"comunas": datos, "total": len(datos)})
-
-
-@app.route("/descargar/csv")
-def descargar_csv():
-    """
-    Exporta los datos DESDE la base de datos (no desde el archivo original)
-    como CSV descargable. Demuestra que la fuente es SQLite.
-    """
-    datos = leer_comunas_bd()
-    if not datos:
-        return "Sin datos. Procese un dataset primero.", 404
-    lineas = ["id,nombre,fecha_carga"] + [
-        f"{f['id']},{f['nombre']},{f['fecha_carga']}" for f in datos
+@app.route("/famosos/descargar/csv")
+def famosos_csv():
+    with get_db() as conn:
+        filas = conn.execute("SELECT * FROM FAMOSOS_NORM ORDER BY nombre").fetchall()
+    lineas = ["id,nombre,fecha_nacimiento,edad,cumpleanios,fecha_carga"] + [
+        f"{r['id']},{r['nombre']},{r['fecha_nacimiento']},{r['edad']},{r['cumpleanios']},{r['fecha_carga']}"
+        for r in filas
     ]
-    return send_file(
-        io.BytesIO("\n".join(lineas).encode("utf-8")),
-        as_attachment=True,
-        download_name="COMUNAS_NORM.csv",
-        mimetype="text/csv"
-    )
+    return send_file(io.BytesIO("\n".join(lineas).encode()), as_attachment=True,
+                     download_name="FAMOSOS_NORM.csv", mimetype="text/csv")
 
+@app.route("/famosos/descargar/log")
+def famosos_log():
+    ruta = f"{BASE_DIR}/famosos_log.txt"
+    if not os.path.exists(ruta): return "Sin log", 404
+    return send_file(ruta, as_attachment=True, download_name="FAMOSOS_LOG.txt")
 
-@app.route("/descargar/log")
-def descargar_log():
-    if not os.path.exists(LOG_PATH):
-        return "Log no disponible. Procese un dataset primero.", 404
-    return send_file(LOG_PATH, as_attachment=True, download_name="COMUNAS_NORM_LOG.txt")
+# Modulo 3
+@app.route("/lugares/procesar", methods=["POST"])
+def lugares_procesar():
+    archivo = request.files.get("archivo")
+    if not archivo:
+        return jsonify({"error": "No se recibio archivo"}), 400
+    lineas = archivo.read().decode("utf-8", errors="replace").splitlines()
+    stats, log_preview = etl_lugares(lineas)
+    return jsonify({"estadisticas": stats, "log_preview": log_preview})
+
+@app.route("/lugares/datos")
+def lugares_datos():
+    with get_db() as conn:
+        filas = conn.execute("""
+            SELECT l.id, l.nombre,
+                   g.latitud, g.longitud,
+                   d.nombre_calle, d.numero_calle, d.ciudad_estado_provincia, d.pais
+            FROM Lugares l
+            LEFT JOIN Georeferencias g ON g.id_lugar = l.id
+            LEFT JOIN Direcciones    d ON d.id_lugar = l.id
+            ORDER BY l.nombre
+        """).fetchall()
+    return jsonify({"datos": [dict(f) for f in filas], "total": len(filas)})
+
+@app.route("/lugares/descargar/log")
+def lugares_log():
+    ruta = f"{BASE_DIR}/lugares_log.txt"
+    if not os.path.exists(ruta): return "Sin log", 404
+    return send_file(ruta, as_attachment=True, download_name="LUGARES_LOG.txt")
 
 
 # ── INICIO ────────────────────────────────────────────────────────────────────
@@ -283,5 +511,5 @@ def descargar_log():
 inicializar_db()
 
 if __name__ == "__main__":
-    print("COMUNAS_NORM iniciado en http://localhost:5000")
+    print("ETL Multi-Modulo iniciado en http://localhost:5000")
     app.run(debug=True, port=5000)
