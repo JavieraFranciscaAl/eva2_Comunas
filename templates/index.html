@@ -6,442 +6,526 @@
   <title>ETL Multi-Modulo — INACAP</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <style>
     :root {
-      --rojo:        #CC0000;
-      --rojo-oscuro: #990000;
-      --rojo-suave:  #FFF0F0;
-      --negro:       #111111;
-      --gris-oscuro: #333333;
-      --gris-medio:  #777777;
-      --gris-claro:  #F4F4F4;
-      --blanco:      #FFFFFF;
-      --borde:       #E0E0E0;
-      --verde:       #1A6B3A;
-      --verde-suave: #EAF4EE;
-      --amarillo:    #B45309;
-      --azul:        #1D4ED8;
-      --azul-suave:  #EFF6FF;
-      --font-body:   'DM Sans', sans-serif;
-      --font-mono:   'DM Mono', monospace;
+      --rojo:#CC0000;--rojo-o:#990000;--rojo-s:#FFF0F0;
+      --negro:#111;--gris-o:#333;--gris-m:#777;--gris-c:#F4F4F4;
+      --blanco:#FFF;--borde:#E0E0E0;
+      --verde:#1A6B3A;--verde-s:#EAF4EE;
+      --amari:#B45309;--azul:#1D4ED8;--azul-s:#EFF6FF;
+      --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
     }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: var(--font-body); background: var(--gris-claro); color: var(--negro); min-height: 100vh; display: flex; flex-direction: column; }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font);background:var(--gris-c);color:var(--negro);min-height:100vh;display:flex;flex-direction:column}
 
-    /* HEADER */
-    header { background: var(--rojo); position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,0.18); }
-    .header-inner { max-width: 1200px; margin: 0 auto; padding: 0 32px; height: 64px; display: flex; align-items: center; justify-content: space-between; }
-    .header-marca { display: flex; align-items: center; gap: 16px; }
-    .header-logo  { font-size: 22px; font-weight: 600; color: var(--blanco); }
-    .header-sep   { width: 1px; height: 24px; background: rgba(255,255,255,0.35); }
-    .header-sub   { font-size: 13px; color: rgba(255,255,255,0.8); }
-    .header-badge { font-size: 11px; font-weight: 500; color: var(--blanco); background: rgba(255,255,255,0.18); padding: 4px 10px; border-radius: 20px; letter-spacing: 0.5px; text-transform: uppercase; }
+    header{background:var(--rojo);position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,.18)}
+    .hi{max-width:1200px;margin:0 auto;padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between}
+    .hm{display:flex;align-items:center;gap:16px}
+    .hl{font-size:22px;font-weight:600;color:var(--blanco)}
+    .hs{width:1px;height:24px;background:rgba(255,255,255,.35)}
+    .hb{font-size:13px;color:rgba(255,255,255,.8)}
+    .hbadge{font-size:11px;font-weight:500;color:var(--blanco);background:rgba(255,255,255,.18);padding:4px 10px;border-radius:20px;letter-spacing:.5px;text-transform:uppercase}
 
-    /* NAV TABS */
-    .nav-tabs { background: var(--blanco); border-bottom: 1px solid var(--borde); }
-    .nav-tabs-inner { max-width: 1200px; margin: 0 auto; padding: 0 32px; display: flex; gap: 4px; }
-    .tab-btn {
-      padding: 14px 20px; font-family: var(--font-body); font-size: 13px; font-weight: 500;
-      color: var(--gris-medio); background: none; border: none; cursor: pointer;
-      border-bottom: 3px solid transparent; transition: all 0.15s ease; white-space: nowrap;
-    }
-    .tab-btn:hover { color: var(--negro); }
-    .tab-btn.activo { color: var(--rojo); border-bottom-color: var(--rojo); }
+    .nav{background:var(--blanco);border-bottom:1px solid var(--borde)}
+    .nav-i{max-width:1200px;margin:0 auto;padding:0 32px;display:flex;gap:4px}
+    .tab{padding:14px 20px;font-family:var(--font);font-size:13px;font-weight:500;color:var(--gris-m);background:none;border:none;cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;white-space:nowrap}
+    .tab:hover{color:var(--negro)}
+    .tab.on{color:var(--rojo);border-bottom-color:var(--rojo)}
 
-    /* MAIN */
-    main { flex: 1; max-width: 1200px; margin: 0 auto; padding: 40px 32px 60px; width: 100%; }
-    .modulo { display: none; }
-    .modulo.activo { display: block; }
+    main{flex:1;max-width:1200px;margin:0 auto;padding:36px 32px 60px;width:100%}
+    .mod{display:none}.mod.on{display:block}
+    .pt{margin-bottom:24px}
+    .pt h2{font-size:24px;font-weight:600;letter-spacing:-.3px}
+    .pt p{margin-top:4px;font-size:13px;color:var(--gris-m)}
+    .r{color:var(--rojo)}
 
-    .page-title { margin-bottom: 28px; }
-    .page-title h2 { font-size: 24px; font-weight: 600; letter-spacing: -0.3px; }
-    .page-title p  { margin-top: 4px; font-size: 13px; color: var(--gris-medio); }
-    .rojo { color: var(--rojo); }
+    .card{background:var(--blanco);border:1px solid var(--borde);border-radius:10px;padding:24px;margin-bottom:18px}
+    .ct{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--gris-m);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+    .ct::before{content:'';display:block;width:3px;height:13px;background:var(--rojo);border-radius:2px}
 
-    /* TARJETA */
-    .card { background: var(--blanco); border: 1px solid var(--borde); border-radius: 10px; padding: 28px; margin-bottom: 20px; }
-    .card-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--gris-medio); margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
-    .card-title::before { content: ''; display: block; width: 3px; height: 13px; background: var(--rojo); border-radius: 2px; }
+    .dz{border:2px dashed var(--borde);border-radius:8px;padding:36px 20px;text-align:center;cursor:pointer;transition:all .2s;position:relative}
+    .dz:hover,.dz.drag{border-color:var(--rojo);background:var(--rojo-s)}
+    .dz input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+    .dz-ic{width:42px;height:42px;margin:0 auto 10px;background:var(--gris-c);border-radius:10px;display:flex;align-items:center;justify-content:center}
+    .dz-ic svg{width:20px;height:20px;stroke:var(--rojo);fill:none;stroke-width:1.8}
+    .dz-l{font-size:14px;font-weight:500;color:var(--gris-o);margin-bottom:3px}
+    .dz-h{font-size:12px;color:var(--gris-m)}
+    .aok{margin-top:10px;display:none;align-items:center;gap:8px;background:var(--verde-s);border:1px solid #b8ddc8;border-radius:6px;padding:7px 11px;font-size:13px;color:var(--verde);font-weight:500}
 
-    /* DROP ZONE */
-    .drop-zone { border: 2px dashed var(--borde); border-radius: 8px; padding: 40px 24px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; }
-    .drop-zone:hover, .drop-zone.drag-over { border-color: var(--rojo); background: var(--rojo-suave); }
-    .drop-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-    .drop-icon { width: 44px; height: 44px; margin: 0 auto 12px; background: var(--gris-claro); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
-    .drop-icon svg { width: 22px; height: 22px; stroke: var(--rojo); fill: none; stroke-width: 1.8; }
-    .drop-label { font-size: 14px; font-weight: 500; color: var(--gris-oscuro); margin-bottom: 4px; }
-    .drop-hint  { font-size: 12px; color: var(--gris-medio); }
-    .archivo-ok { margin-top: 12px; display: none; align-items: center; gap: 8px; background: var(--verde-suave); border: 1px solid #b8ddc8; border-radius: 6px; padding: 8px 12px; font-size: 13px; color: var(--verde); font-weight: 500; }
+    .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:6px;font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;text-decoration:none}
+    .btn-p{background:var(--rojo);color:var(--blanco)}
+    .btn-p:hover{background:var(--rojo-o);transform:translateY(-1px);box-shadow:0 4px 12px rgba(204,0,0,.2)}
+    .btn-p:disabled{background:#ccc;cursor:not-allowed;transform:none;box-shadow:none}
+    .btn-s{background:var(--gris-c);color:var(--gris-o);border:1px solid var(--borde)}
+    .btn-s:hover{background:var(--borde)}
+    .ac{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;align-items:center}
 
-    /* BOTONES */
-    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 6px; font-family: var(--font-body); font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; text-decoration: none; }
-    .btn-primario { background: var(--rojo); color: var(--blanco); }
-    .btn-primario:hover { background: var(--rojo-oscuro); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(204,0,0,0.2); }
-    .btn-primario:disabled { background: #ccc; cursor: not-allowed; transform: none; box-shadow: none; }
-    .btn-secundario { background: var(--gris-claro); color: var(--gris-oscuro); border: 1px solid var(--borde); }
-    .btn-secundario:hover { background: var(--borde); }
-    .acciones { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+    /* FORMATO SELECTOR */
+    .fmt-sel{display:flex;gap:8px;margin-top:12px}
+    .fmt-btn{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--borde);background:var(--blanco);color:var(--gris-m);transition:all .15s}
+    .fmt-btn.sel{background:var(--rojo);color:var(--blanco);border-color:var(--rojo)}
 
-    /* PROGRESO */
-    .progreso-wrap { display: none; margin-top: 16px; }
-    .progreso-bg   { height: 3px; background: var(--borde); border-radius: 2px; overflow: hidden; }
-    .progreso-fill { height: 100%; background: var(--rojo); border-radius: 2px; width: 0%; transition: width 0.4s; }
-    .progreso-txt  { font-size: 11px; color: var(--gris-medio); margin-top: 5px; }
+    /* BUSCADOR COMUNAS */
+    .buscador-wrap{position:relative;margin-bottom:16px}
+    .buscador-input{width:100%;padding:10px 14px;border:1px solid var(--borde);border-radius:6px;font-family:var(--font);font-size:14px;outline:none;transition:border-color .15s}
+    .buscador-input:focus{border-color:var(--rojo)}
+    .sugerencias{position:absolute;top:100%;left:0;right:0;background:var(--blanco);border:1px solid var(--borde);border-top:none;border-radius:0 0 6px 6px;z-index:50;max-height:240px;overflow-y:auto;display:none}
+    .sug-item{padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--gris-c);display:flex;justify-content:space-between;align-items:center}
+    .sug-item:hover{background:var(--rojo-s)}
+    .sug-nombre{font-weight:500}
+    .sug-meta{font-size:11px;color:var(--gris-m);text-align:right}
 
-    /* STATS */
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; }
-    .stat-item { background: var(--gris-claro); border-radius: 8px; padding: 16px; text-align: center; }
-    .stat-valor { font-size: 28px; font-weight: 600; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
-    .v-rojo  { color: var(--rojo); }
-    .v-verde { color: var(--verde); }
-    .v-amari { color: var(--amarillo); }
-    .v-azul  { color: var(--azul); }
-    .stat-etiqueta { font-size: 10px; color: var(--gris-medio); margin-top: 3px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+    .pw{display:none;margin-top:14px}
+    .pbg{height:3px;background:var(--borde);border-radius:2px;overflow:hidden}
+    .pf{height:100%;background:var(--rojo);border-radius:2px;width:0%;transition:width .4s}
+    .pt2{font-size:11px;color:var(--gris-m);margin-top:4px}
 
-    /* LOG */
-    .log-pre { background: #111; color: #ddd; font-family: var(--font-mono); font-size: 11px; line-height: 1.7; padding: 16px; border-radius: 6px; overflow: auto; max-height: 220px; white-space: pre; }
-    .log-mod { color: #FFB347; }
-    .log-dup { color: #FF6B6B; }
-    .log-sin { color: #666; }
-    .log-desc{ color: #F87171; }
-    .log-cump{ color: #34D399; }
+    .sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+    .si{background:var(--gris-c);border-radius:8px;padding:14px;text-align:center}
+    .sv{font-size:26px;font-weight:600;letter-spacing:-1px;font-variant-numeric:tabular-nums}
+    .v-r{color:var(--rojo)}.v-v{color:var(--verde)}.v-a{color:var(--amari)}.v-b{color:var(--azul)}
+    .se{font-size:10px;color:var(--gris-m);margin-top:2px;font-weight:500;text-transform:uppercase;letter-spacing:.5px}
 
-    /* TABLA */
-    .busqueda-input { width: 100%; padding: 9px 12px; border: 1px solid var(--borde); border-radius: 6px; font-family: var(--font-body); font-size: 13px; outline: none; transition: border-color 0.15s; margin-bottom: 12px; }
-    .busqueda-input:focus { border-color: var(--rojo); }
-    .tabla-wrap { overflow: auto; max-height: 420px; border-radius: 6px; border: 1px solid var(--borde); }
-    table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    thead tr { background: var(--rojo); color: var(--blanco); position: sticky; top: 0; }
-    thead th { padding: 10px 14px; text-align: left; font-weight: 600; font-size: 11px; letter-spacing: 0.4px; white-space: nowrap; }
-    tbody tr { border-bottom: 1px solid var(--gris-claro); }
-    tbody tr:hover { background: var(--rojo-suave); }
-    tbody td { padding: 8px 14px; color: var(--gris-oscuro); }
-    .mono { font-family: var(--font-mono); }
-    .badge-id { background: var(--gris-claro); border-radius: 4px; padding: 2px 6px; font-family: var(--font-mono); font-size: 10px; color: var(--gris-medio); }
-    .badge-si { background: #D1FAE5; color: #065F46; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 600; }
-    .badge-no { background: var(--gris-claro); color: var(--gris-medio); border-radius: 4px; padding: 2px 8px; font-size: 10px; }
+    .lp{background:#111;color:#ddd;font-family:var(--mono);font-size:11px;line-height:1.7;padding:14px;border-radius:6px;overflow:auto;max-height:200px;white-space:pre}
+    .lm{color:#FFB347}.ld{color:#FF6B6B}.ls{color:#666}.lde{color:#F87171}.lc{color:#34D399}
 
-    /* DESCARGAS */
-    .descarga-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
-    .descarga-item { border: 1px solid var(--borde); border-radius: 8px; padding: 18px; }
-    .descarga-nombre { font-size: 13px; font-weight: 600; font-family: var(--font-mono); margin-bottom: 4px; }
-    .descarga-desc   { font-size: 11px; color: var(--gris-medio); margin-bottom: 10px; }
+    .bi{width:100%;padding:8px 11px;border:1px solid var(--borde);border-radius:6px;font-family:var(--font);font-size:13px;outline:none;transition:border-color .15s;margin-bottom:10px}
+    .bi:focus{border-color:var(--rojo)}
+    .tw{overflow:auto;max-height:380px;border-radius:6px;border:1px solid var(--borde)}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    thead tr{background:var(--rojo);color:var(--blanco);position:sticky;top:0}
+    thead th{padding:9px 12px;text-align:left;font-weight:600;font-size:11px;letter-spacing:.4px;white-space:nowrap}
+    tbody tr{border-bottom:1px solid var(--gris-c)}
+    tbody tr:hover{background:var(--rojo-s)}
+    tbody td{padding:7px 12px;color:var(--gris-o)}
+    .mono{font-family:var(--mono)}
+    .bid{background:var(--gris-c);border-radius:4px;padding:2px 6px;font-family:var(--mono);font-size:10px;color:var(--gris-m)}
+    .bsi{background:#D1FAE5;color:#065F46;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:600}
+    .bno{background:var(--gris-c);color:var(--gris-m);border-radius:4px;padding:2px 8px;font-size:10px}
+    .btn-img{padding:4px 10px;font-size:11px;background:var(--azul-s);color:var(--azul);border:1px solid #bfdbfe;border-radius:4px;cursor:pointer;font-family:var(--font);font-weight:500}
+    .btn-img:hover{background:#dbeafe}
 
-    .resultado-section { display: none; }
+    .dg{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+    .di{border:1px solid var(--borde);border-radius:8px;padding:16px}
+    .dn{font-size:13px;font-weight:600;font-family:var(--mono);margin-bottom:4px}
+    .dd{font-size:11px;color:var(--gris-m);margin-bottom:10px}
 
-    /* FOOTER */
-    footer { background: var(--blanco); border-top: 1px solid var(--borde); padding: 14px 32px; text-align: center; font-size: 11px; color: var(--gris-medio); }
-    footer span { color: var(--rojo); font-weight: 500; }
+    /* MAPA */
+    #mapa{height:520px;border-radius:8px;border:1px solid var(--borde)}
+    .map-stats{display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap}
+    .map-stat{font-size:12px;color:var(--gris-m)}
+    .map-stat span{font-weight:600;color:var(--negro)}
 
-    @media (max-width: 640px) {
-      .header-badge { display: none; }
-      main { padding: 20px 16px 40px; }
-      .card { padding: 18px; }
-    }
+    /* MODAL IMAGEN */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;display:none;align-items:center;justify-content:center}
+    .modal-overlay.on{display:flex}
+    .modal{background:var(--blanco);border-radius:12px;padding:28px;max-width:400px;width:90%;position:relative}
+    .modal-cerrar{position:absolute;top:12px;right:12px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--gris-m)}
+    .modal-nombre{font-size:18px;font-weight:600;margin-bottom:4px}
+    .modal-meta{font-size:13px;color:var(--gris-m);margin-bottom:16px}
+    .modal-img{width:100%;max-height:280px;object-fit:cover;border-radius:8px;margin-bottom:12px;background:var(--gris-c)}
+    .modal-fuente{font-size:11px;color:var(--gris-m);font-style:italic}
+    .modal-cargando{text-align:center;padding:40px;color:var(--gris-m);font-size:13px}
+
+    .rs{display:none}
+
+    footer{background:var(--blanco);border-top:1px solid var(--borde);padding:14px 32px;text-align:center;font-size:11px;color:var(--gris-m)}
+    footer span{color:var(--rojo);font-weight:500}
+
+    @media(max-width:640px){.hbadge{display:none}main{padding:18px 14px 40px}.card{padding:16px}}
   </style>
 </head>
 <body>
 
 <header>
-  <div class="header-inner">
-    <div class="header-marca">
-      <span class="header-logo">INACAP</span>
-      <div class="header-sep"></div>
-      <span class="header-sub">Arquitectura y Almacenamiento de Datos</span>
+  <div class="hi">
+    <div class="hm">
+      <span class="hl">INACAP</span>
+      <div class="hs"></div>
+      <span class="hb">Arquitectura y Almacenamiento de Datos</span>
     </div>
-    <span class="header-badge">Evaluacion 2</span>
+    <span class="hbadge">Evaluacion 2</span>
   </div>
 </header>
 
-<div class="nav-tabs">
-  <div class="nav-tabs-inner">
-    <button class="tab-btn activo" onclick="cambiarTab('comunas', this)">Comunas</button>
-    <button class="tab-btn" onclick="cambiarTab('famosos', this)">Famosos</button>
-    <button class="tab-btn" onclick="cambiarTab('lugares', this)">Lugares</button>
+<div class="nav">
+  <div class="nav-i">
+    <button class="tab on" onclick="tab('comunas',this)">Comunas</button>
+    <button class="tab" onclick="tab('famosos',this)">Famosos</button>
+    <button class="tab" onclick="tab('lugares',this)">Lugares</button>
   </div>
 </div>
 
 <main>
 
-  <!-- ── MODULO 1: COMUNAS ─────────────────────────────────────────────────── -->
-  <div class="modulo activo" id="mod-comunas">
-    <div class="page-title">
-      <h2>COMUNAS<span class="rojo">_NORM</span></h2>
-      <p>Normalizacion, limpieza y deduplicacion de comunas chilenas</p>
+<!-- ── COMUNAS ─────────────────────────────────────────────────────────────── -->
+<div class="mod on" id="mod-comunas">
+  <div class="pt">
+    <h2>COMUNAS<span class="r">_NORM</span></h2>
+    <p>Normalizacion, enriquecimiento con datos INE (region y poblacion) y busqueda en tiempo real</p>
+  </div>
+
+  <!-- Buscador individual -->
+  <div class="card">
+    <div class="ct">Buscar comuna individualmente</div>
+    <div class="buscador-wrap">
+      <input class="buscador-input" id="bq-live" type="text" placeholder="Escribe una comuna, ej: florida..." oninput="buscarLive()" autocomplete="off" />
+      <div class="sugerencias" id="sugerencias"></div>
     </div>
-    <div class="card">
-      <div class="card-title">Cargar Dataset</div>
-      <div class="drop-zone" id="dz-comunas">
-        <input type="file" id="fi-comunas" accept=".txt,.csv" />
-        <div class="drop-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
-        <div class="drop-label">Arrastra tu archivo o haz clic</div>
-        <div class="drop-hint">.txt o .csv</div>
-      </div>
-      <div class="archivo-ok" id="ao-comunas"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><span id="fn-comunas"></span></div>
-      <div class="progreso-wrap" id="pw-comunas"><div class="progreso-bg"><div class="progreso-fill" id="pf-comunas"></div></div><div class="progreso-txt" id="pt-comunas">Procesando...</div></div>
-      <div class="acciones"><button class="btn btn-primario" id="btn-comunas" disabled onclick="procesar('comunas')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Ejecutar ETL</button></div>
+    <p style="font-size:12px;color:var(--gris-m)">Busqueda en el dataset oficial INE (346 comunas). Ejemplo: "florida" muestra "Florida" y "La Florida".</p>
+  </div>
+
+  <!-- Carga de archivo -->
+  <div class="card">
+    <div class="ct">Cargar Dataset y Normalizar</div>
+    <div class="dz" id="dz-c">
+      <input type="file" id="fi-c" accept=".txt,.csv" />
+      <div class="dz-ic"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+      <div class="dz-l">Arrastra tu archivo o haz clic</div>
+      <div class="dz-h">.txt o .csv con lista de comunas</div>
     </div>
-    <div class="resultado-section" id="res-comunas">
-      <div class="card">
-        <div class="card-title">Estadisticas</div>
-        <div class="stats-grid">
-          <div class="stat-item"><div class="stat-valor" id="sc-entrada">0</div><div class="stat-etiqueta">Entrada</div></div>
-          <div class="stat-item"><div class="stat-valor v-amari" id="sc-modif">0</div><div class="stat-etiqueta">Modificados</div></div>
-          <div class="stat-item"><div class="stat-valor v-rojo" id="sc-duplic">0</div><div class="stat-etiqueta">Duplicados</div></div>
-          <div class="stat-item"><div class="stat-valor v-verde" id="sc-result">0</div><div class="stat-etiqueta">En BD</div></div>
-        </div>
+    <div class="aok" id="ao-c"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><span id="fn-c"></span></div>
+
+    <div style="margin-top:14px">
+      <p style="font-size:12px;font-weight:600;color:var(--gris-m);margin-bottom:8px">FORMATO DE SALIDA</p>
+      <div class="fmt-sel">
+        <button class="fmt-btn sel" onclick="setFmt('titulo',this)">Titulo</button>
+        <button class="fmt-btn" onclick="setFmt('mayusculas',this)">MAYUSCULAS</button>
+        <button class="fmt-btn" onclick="setFmt('minusculas',this)">minusculas</button>
       </div>
-      <div class="card">
-        <div class="card-title">Tabla COMUNAS_NORM — SQLite</div>
-        <input class="busqueda-input" type="text" placeholder="Buscar comuna..." oninput="filtrar('comunas')" id="bq-comunas" />
-        <div class="tabla-wrap"><table><thead><tr><th>#</th><th>ID</th><th>Nombre</th><th>Fecha Carga</th></tr></thead><tbody id="tb-comunas"></tbody></table></div>
-        <p style="font-size:11px;color:var(--gris-medio);margin-top:8px">Mostrando <span id="tv-comunas">0</span> de <span id="tt-comunas">0</span> registros</p>
-      </div>
-      <div class="card"><div class="card-title">Log de Cambios</div><div class="log-pre" id="lp-comunas"></div></div>
-      <div class="card">
-        <div class="card-title">Descargar</div>
-        <div class="descarga-grid">
-          <div class="descarga-item"><div class="descarga-nombre">COMUNAS_NORM.csv</div><div class="descarga-desc">Dataset normalizado desde SQLite</div><a class="btn btn-primario" href="/comunas/descargar/csv"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>CSV</a></div>
-          <div class="descarga-item"><div class="descarga-nombre">COMUNAS_LOG.txt</div><div class="descarga-desc">Registro de transformaciones</div><a class="btn btn-secundario" href="/comunas/descargar/log"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Log</a></div>
-        </div>
-      </div>
+    </div>
+
+    <div class="pw" id="pw-c"><div class="pbg"><div class="pf" id="pf-c"></div></div><div class="pt2" id="pt-c">Procesando...</div></div>
+    <div class="ac">
+      <button class="btn btn-p" id="btn-c" disabled onclick="procesar('comunas')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Ejecutar ETL
+      </button>
     </div>
   </div>
 
-  <!-- ── MODULO 2: FAMOSOS ─────────────────────────────────────────────────── -->
-  <div class="modulo" id="mod-famosos">
-    <div class="page-title">
-      <h2>FAMOSOS<span class="rojo">_NORM</span></h2>
-      <p>Normalizacion de fechas a DD-MM-YYYY, calculo de edad y flag de cumpleanos</p>
+  <div class="rs" id="res-c">
+    <div class="card">
+      <div class="ct">Estadisticas del Proceso</div>
+      <div class="sg">
+        <div class="si"><div class="sv" id="sc-e">0</div><div class="se">Leidos</div></div>
+        <div class="si"><div class="sv v-a" id="sc-m">0</div><div class="se">Modificados</div></div>
+        <div class="si"><div class="sv v-r" id="sc-d">0</div><div class="se">Duplicados</div></div>
+        <div class="si"><div class="sv v-v" id="sc-c">0</div><div class="se">Consolidados INE</div></div>
+        <div class="si"><div class="sv v-b" id="sc-nf">0</div><div class="se">No encontrados</div></div>
+      </div>
     </div>
     <div class="card">
-      <div class="card-title">Cargar Dataset</div>
-      <div class="drop-zone" id="dz-famosos">
-        <input type="file" id="fi-famosos" accept=".txt,.csv" />
-        <div class="drop-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
-        <div class="drop-label">Arrastra tu archivo o haz clic</div>
-        <div class="drop-hint">.txt o .csv</div>
-      </div>
-      <div class="archivo-ok" id="ao-famosos"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><span id="fn-famosos"></span></div>
-      <div class="progreso-wrap" id="pw-famosos"><div class="progreso-bg"><div class="progreso-fill" id="pf-famosos"></div></div><div class="progreso-txt" id="pt-famosos">Procesando...</div></div>
-      <div class="acciones"><button class="btn btn-primario" id="btn-famosos" disabled onclick="procesar('famosos')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Ejecutar ETL</button></div>
+      <div class="ct">Tabla COMUNAS_NORM — SQLite (con Region y Poblacion INE)</div>
+      <input class="bi" type="text" placeholder="Filtrar..." oninput="filtrar('comunas')" id="bf-c" />
+      <div class="tw"><table><thead><tr><th>#</th><th>ID</th><th>Nombre</th><th>Region</th><th>Poblacion</th><th>Fecha Carga</th></tr></thead><tbody id="tb-c"></tbody></table></div>
+      <p style="font-size:11px;color:var(--gris-m);margin-top:7px">Mostrando <span id="tv-c">0</span> de <span id="tt-c">0</span></p>
     </div>
-    <div class="resultado-section" id="res-famosos">
-      <div class="card">
-        <div class="card-title">Estadisticas</div>
-        <div class="stats-grid">
-          <div class="stat-item"><div class="stat-valor" id="sf-entrada">0</div><div class="stat-etiqueta">Entrada</div></div>
-          <div class="stat-item"><div class="stat-valor v-rojo" id="sf-duplic">0</div><div class="stat-etiqueta">Duplicados</div></div>
-          <div class="stat-item"><div class="stat-valor v-amari" id="sf-descar">0</div><div class="stat-etiqueta">Descartados</div></div>
-          <div class="stat-item"><div class="stat-valor v-verde" id="sf-result">0</div><div class="stat-etiqueta">En BD</div></div>
-          <div class="stat-item"><div class="stat-valor v-azul" id="sf-cumple">0</div><div class="stat-etiqueta">Cumplen hoy</div></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-title">Tabla FAMOSOS_NORM — SQLite</div>
-        <input class="busqueda-input" type="text" placeholder="Buscar famoso..." oninput="filtrar('famosos')" id="bq-famosos" />
-        <div class="tabla-wrap"><table><thead><tr><th>#</th><th>ID</th><th>Nombre</th><th>Fecha Nacimiento</th><th>Edad</th><th>Cumpleanos Hoy</th></tr></thead><tbody id="tb-famosos"></tbody></table></div>
-        <p style="font-size:11px;color:var(--gris-medio);margin-top:8px">Mostrando <span id="tv-famosos">0</span> de <span id="tt-famosos">0</span> registros</p>
-      </div>
-      <div class="card"><div class="card-title">Log de Cambios</div><div class="log-pre" id="lp-famosos"></div></div>
-      <div class="card">
-        <div class="card-title">Descargar</div>
-        <div class="descarga-grid">
-          <div class="descarga-item"><div class="descarga-nombre">FAMOSOS_NORM.csv</div><div class="descarga-desc">Dataset normalizado desde SQLite</div><a class="btn btn-primario" href="/famosos/descargar/csv"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>CSV</a></div>
-          <div class="descarga-item"><div class="descarga-nombre">FAMOSOS_LOG.txt</div><div class="descarga-desc">Registro de transformaciones</div><a class="btn btn-secundario" href="/famosos/descargar/log"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Log</a></div>
-        </div>
+    <div class="card"><div class="ct">Log</div><div class="lp" id="lp-c"></div></div>
+    <div class="card">
+      <div class="ct">Descargar</div>
+      <div class="dg">
+        <div class="di"><div class="dn">COMUNAS_NORM.csv</div><div class="dd">Dataset con region y poblacion desde SQLite</div><a class="btn btn-p" href="/comunas/descargar/csv"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>CSV</a></div>
+        <div class="di"><div class="dn">COMUNAS_LOG.txt</div><div class="dd">Auditoria completa del proceso ETL</div><a class="btn btn-s" href="/comunas/descargar/log"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Log</a></div>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- ── MODULO 3: LUGARES ─────────────────────────────────────────────────── -->
-  <div class="modulo" id="mod-lugares">
-    <div class="page-title">
-      <h2>LUGARES<span class="rojo">_NORM</span></h2>
-      <p>Normalizacion y separacion en tres tablas: Lugares, Georeferencias, Direcciones</p>
+<!-- ── FAMOSOS ─────────────────────────────────────────────────────────────── -->
+<div class="mod" id="mod-famosos">
+  <div class="pt">
+    <h2>FAMOSOS<span class="r">_NORM</span></h2>
+    <p>Normalizacion de fechas a DD-MM-YYYY, calculo de edad, flag de cumpleanos e imagen desde Wikipedia</p>
+  </div>
+  <div class="card">
+    <div class="ct">Cargar Dataset</div>
+    <div class="dz" id="dz-f">
+      <input type="file" id="fi-f" accept=".txt,.csv" />
+      <div class="dz-ic"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+      <div class="dz-l">Arrastra tu archivo o haz clic</div>
+      <div class="dz-h">.txt con formato: N. Nombre - FECHA</div>
+    </div>
+    <div class="aok" id="ao-f"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><span id="fn-f"></span></div>
+    <div class="pw" id="pw-f"><div class="pbg"><div class="pf" id="pf-f"></div></div><div class="pt2" id="pt-f">Procesando...</div></div>
+    <div class="ac"><button class="btn btn-p" id="btn-f" disabled onclick="procesar('famosos')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Ejecutar ETL</button></div>
+  </div>
+  <div class="rs" id="res-f">
+    <div class="card">
+      <div class="ct">Estadisticas</div>
+      <div class="sg">
+        <div class="si"><div class="sv" id="sf-e">0</div><div class="se">Procesados</div></div>
+        <div class="si"><div class="sv v-r" id="sf-d">0</div><div class="se">Duplicados</div></div>
+        <div class="si"><div class="sv v-a" id="sf-de">0</div><div class="se">Descartados</div></div>
+        <div class="si"><div class="sv v-v" id="sf-r">0</div><div class="se">En BD</div></div>
+        <div class="si"><div class="sv v-b" id="sf-cu">0</div><div class="se">Cumplen Hoy</div></div>
+      </div>
     </div>
     <div class="card">
-      <div class="card-title">Cargar Dataset</div>
-      <div class="drop-zone" id="dz-lugares">
-        <input type="file" id="fi-lugares" accept=".txt,.csv" />
-        <div class="drop-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
-        <div class="drop-label">Arrastra tu archivo o haz clic</div>
-        <div class="drop-hint">.txt o .csv separado por punto y coma</div>
-      </div>
-      <div class="archivo-ok" id="ao-lugares"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><span id="fn-lugares"></span></div>
-      <div class="progreso-wrap" id="pw-lugares"><div class="progreso-bg"><div class="progreso-fill" id="pf-lugares"></div></div><div class="progreso-txt" id="pt-lugares">Procesando...</div></div>
-      <div class="acciones"><button class="btn btn-primario" id="btn-lugares" disabled onclick="procesar('lugares')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Ejecutar ETL</button></div>
+      <div class="ct">Tabla FAMOSOS_NORM — clic en "Ver imagen" para cargar desde Wikipedia</div>
+      <input class="bi" type="text" placeholder="Filtrar..." oninput="filtrar('famosos')" id="bf-f" />
+      <div class="tw"><table><thead><tr><th>#</th><th>ID</th><th>Nombre</th><th>Fecha Nac.</th><th>Edad</th><th>Cumple Hoy</th><th>Imagen</th></tr></thead><tbody id="tb-f"></tbody></table></div>
+      <p style="font-size:11px;color:var(--gris-m);margin-top:7px">Mostrando <span id="tv-f">0</span> de <span id="tt-f">0</span></p>
     </div>
-    <div class="resultado-section" id="res-lugares">
-      <div class="card">
-        <div class="card-title">Estadisticas</div>
-        <div class="stats-grid">
-          <div class="stat-item"><div class="stat-valor" id="sl-entrada">0</div><div class="stat-etiqueta">Entrada</div></div>
-          <div class="stat-item"><div class="stat-valor v-rojo" id="sl-duplic">0</div><div class="stat-etiqueta">Duplicados</div></div>
-          <div class="stat-item"><div class="stat-valor v-verde" id="sl-result">0</div><div class="stat-etiqueta">En BD</div></div>
-        </div>
+    <div class="card"><div class="ct">Log</div><div class="lp" id="lp-f"></div></div>
+    <div class="card">
+      <div class="ct">Descargar</div>
+      <div class="dg">
+        <div class="di"><div class="dn">FAMOSOS_NORM.csv</div><div class="dd">Dataset normalizado desde SQLite</div><a class="btn btn-p" href="/famosos/descargar/csv"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>CSV</a></div>
+        <div class="di"><div class="dn">FAMOSOS_LOG.txt</div><div class="dd">Auditoria del proceso ETL</div><a class="btn btn-s" href="/famosos/descargar/log"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Log</a></div>
       </div>
-      <div class="card">
-        <div class="card-title">Tabla Lugares + Georeferencias + Direcciones — SQLite</div>
-        <input class="busqueda-input" type="text" placeholder="Buscar lugar..." oninput="filtrar('lugares')" id="bq-lugares" />
-        <div class="tabla-wrap"><table><thead><tr><th>#</th><th>ID</th><th>Nombre</th><th>Latitud</th><th>Longitud</th><th>Calle</th><th>Numero</th><th>Ciudad/Estado</th><th>Pais</th></tr></thead><tbody id="tb-lugares"></tbody></table></div>
-        <p style="font-size:11px;color:var(--gris-medio);margin-top:8px">Mostrando <span id="tv-lugares">0</span> de <span id="tt-lugares">0</span> registros</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── LUGARES ─────────────────────────────────────────────────────────────── -->
+<div class="mod" id="mod-lugares">
+  <div class="pt">
+    <h2>LUGARES<span class="r">_NORM</span></h2>
+    <p>Normalizacion y separacion en tres tablas relacionadas: Lugares, Georeferencias, Direcciones</p>
+  </div>
+  <div class="card">
+    <div class="ct">Cargar Dataset</div>
+    <div class="dz" id="dz-l">
+      <input type="file" id="fi-l" accept=".txt,.csv" />
+      <div class="dz-ic"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+      <div class="dz-l">Arrastra tu archivo o haz clic</div>
+      <div class="dz-h">.txt separado por punto y coma: Nombre;Direccion;Lat,Lon</div>
+    </div>
+    <div class="aok" id="ao-l"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><span id="fn-l"></span></div>
+    <div class="pw" id="pw-l"><div class="pbg"><div class="pf" id="pf-l"></div></div><div class="pt2" id="pt-l">Procesando...</div></div>
+    <div class="ac">
+      <button class="btn btn-p" id="btn-l" disabled onclick="procesar('lugares')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Ejecutar ETL
+      </button>
+    </div>
+  </div>
+  <div class="rs" id="res-l">
+    <div class="card">
+      <div class="ct">Estadisticas</div>
+      <div class="sg">
+        <div class="si"><div class="sv" id="sl-e">0</div><div class="se">Entrada</div></div>
+        <div class="si"><div class="sv v-r" id="sl-d">0</div><div class="se">Duplicados</div></div>
+        <div class="si"><div class="sv v-v" id="sl-r">0</div><div class="se">En BD</div></div>
       </div>
-      <div class="card"><div class="card-title">Log de Cambios</div><div class="log-pre" id="lp-lugares"></div></div>
-      <div class="card">
-        <div class="card-title">Descargar</div>
-        <div class="descarga-grid">
-          <div class="descarga-item"><div class="descarga-nombre">LUGARES_LOG.txt</div><div class="descarga-desc">Registro de transformaciones y deduplicacion</div><a class="btn btn-secundario" href="/lugares/descargar/log"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Log</a></div>
-        </div>
+    </div>
+    <div class="card">
+      <div class="ct">Tabla Lugares + Georeferencias + Direcciones — SQLite</div>
+      <input class="bi" type="text" placeholder="Filtrar..." oninput="filtrar('lugares')" id="bf-l" />
+      <div class="tw"><table><thead><tr><th>#</th><th>ID</th><th>Nombre</th><th>Lat</th><th>Lon</th><th>Calle</th><th>Ciudad/Estado</th><th>Pais</th></tr></thead><tbody id="tb-l"></tbody></table></div>
+      <p style="font-size:11px;color:var(--gris-m);margin-top:7px">Mostrando <span id="tv-l">0</span> de <span id="tt-l">0</span></p>
+    </div>
+    <div class="card"><div class="ct">Log</div><div class="lp" id="lp-l"></div></div>
+    <div class="card">
+      <div class="ct">Descargar</div>
+      <div class="dg">
+        <div class="di"><div class="dn">LUGARES_LOG.txt</div><div class="dd">Auditoria del proceso ETL</div><a class="btn btn-s" href="/lugares/descargar/log"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Log</a></div>
       </div>
+    </div>
+    <!-- BOTON VER EN MAPA -->
+    <div class="card" style="text-align:center;padding:28px">
+      <p style="font-size:14px;font-weight:500;margin-bottom:16px;color:var(--gris-o)">Los datos estan cargados en la base de datos.</p>
+      <button class="btn btn-p" style="font-size:15px;padding:13px 32px" onclick="mostrarMapa()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        Ver en Mapa
+      </button>
+    </div>
+  </div>
+
+  <!-- MAPA — oculto hasta hacer clic en Ver en Mapa -->
+  <div id="seccion-mapa" style="display:none">
+    <div class="card">
+      <div class="ct">Mapa Mundial — Leaflet + OpenStreetMap</div>
+      <div class="map-stats">
+        <div class="map-stat">Lugares cargados: <span id="mapa-total">0</span></div>
+        <div class="map-stat" style="color:var(--gris-m);font-size:11px">Clic en marcador para ver detalles y abrir en Google Maps</div>
+      </div>
+      <div id="mapa"></div>
     </div>
   </div>
 
 </main>
+
+<!-- MODAL IMAGEN FAMOSO -->
+<div class="modal-overlay" id="modal" onclick="cerrarModal(event)">
+  <div class="modal">
+    <button class="modal-cerrar" onclick="cerrarModal()">&times;</button>
+    <div id="modal-body"></div>
+  </div>
+</div>
 
 <footer>
   <span>ETL Multi-Modulo</span> &nbsp;|&nbsp; Javiera Francisca Alarcon Albornoz &nbsp;|&nbsp; INACAP Concepcion &nbsp;|&nbsp; Arquitectura y Almacenamiento de Datos 2026
 </footer>
 
 <script>
-  // ── NAVEGACION ─────────────────────────────────────────────────────────────
-  function cambiarTab(modulo, btn) {
-    document.querySelectorAll('.modulo').forEach(m => m.classList.remove('activo'));
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('activo'));
-    document.getElementById('mod-' + modulo).classList.add('activo');
-    btn.classList.add('activo');
+  // ── ESTADO ──────────────────────────────────────────────────────────────────
+  const datos = { comunas: [], famosos: [], lugares: [] };
+  let fmtActual = 'titulo';
+  let mapaLeaflet = null;
+
+  // ── NAVEGACION ───────────────────────────────────────────────────────────────
+  function tab(mod, btn) {
+    document.querySelectorAll('.mod').forEach(m => m.classList.remove('on'));
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('on'));
+    document.getElementById('mod-' + mod).classList.add('on');
+    btn.classList.add('on');
   }
 
-  // ── DATOS EN MEMORIA ────────────────────────────────────────────────────────
-  const datos = { comunas: [], famosos: [], lugares: [] };
+  function mostrarMapa() {
+    const seccion = document.getElementById('seccion-mapa');
+    seccion.style.display = 'block';
+    seccion.scrollIntoView({ behavior: 'smooth' });
+    setTimeout(() => iniciarMapa(), 200);
+  }
 
-  // ── SETUP DROP ZONES ────────────────────────────────────────────────────────
-  ['comunas', 'famosos', 'lugares'].forEach(mod => {
-    const input = document.getElementById('fi-' + mod);
-    const dz    = document.getElementById('dz-' + mod);
-    const btn   = document.getElementById('btn-' + mod);
+  async function refrescarMapa() {
+    await cargarTabla('lugares');
+    iniciarMapa();
+  }
 
-    input.addEventListener('change', () => {
-      if (input.files.length > 0) {
-        document.getElementById('fn-' + mod).textContent = input.files[0].name;
-        document.getElementById('ao-' + mod).style.display = 'flex';
-        btn.disabled = false;
+  // ── FORMATO COMUNAS ──────────────────────────────────────────────────────────
+  function setFmt(fmt, btn) {
+    fmtActual = fmt;
+    document.querySelectorAll('.fmt-btn').forEach(b => b.classList.remove('sel'));
+    btn.classList.add('sel');
+  }
+
+  // ── DROP ZONES ────────────────────────────────────────────────────────────────
+  [['c','comunas'],['f','famosos'],['l','lugares']].forEach(([k, mod]) => {
+    const inp = document.getElementById('fi-' + k);
+    const dz  = document.getElementById('dz-' + k);
+    inp.addEventListener('change', () => {
+      if (inp.files.length) {
+        document.getElementById('fn-' + k).textContent = inp.files[0].name;
+        document.getElementById('ao-' + k).style.display = 'flex';
+        document.getElementById('btn-' + k).disabled = false;
       }
     });
-    dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('drag-over'); });
-    dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+    dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
     dz.addEventListener('drop', e => {
-      e.preventDefault(); dz.classList.remove('drag-over');
-      if (e.dataTransfer.files.length > 0) {
-        input.files = e.dataTransfer.files;
-        input.dispatchEvent(new Event('change'));
+      e.preventDefault(); dz.classList.remove('drag');
+      if (e.dataTransfer.files.length) {
+        inp.files = e.dataTransfer.files;
+        inp.dispatchEvent(new Event('change'));
       }
     });
   });
 
-  // ── PROCESAR ────────────────────────────────────────────────────────────────
+  // ── PROCESAR ──────────────────────────────────────────────────────────────────
+  const modKey = { comunas: 'c', famosos: 'f', lugares: 'l' };
+
   async function procesar(mod) {
-    const input = document.getElementById('fi-' + mod);
-    if (!input.files.length) return;
+    const k   = modKey[mod];
+    const inp = document.getElementById('fi-' + k);
+    if (!inp.files.length) return;
 
-    const pf  = document.getElementById('pf-' + mod);
-    const pt  = document.getElementById('pt-' + mod);
-    const pw  = document.getElementById('pw-' + mod);
-    const btn = document.getElementById('btn-' + mod);
-
-    pw.style.display = 'block';
-    btn.disabled = true;
-    pf.style.width = '30%'; pt.textContent = 'Leyendo archivo...';
+    const pf  = document.getElementById('pf-' + k);
+    const pt  = document.getElementById('pt-' + k);
+    const pw  = document.getElementById('pw-' + k);
+    const btn = document.getElementById('btn-' + k);
+    pw.style.display = 'block'; btn.disabled = true;
+    pf.style.width = '25%'; pt.textContent = 'Leyendo archivo...';
 
     const form = new FormData();
-    form.append('archivo', input.files[0]);
+    form.append('archivo', inp.files[0]);
+    if (mod === 'comunas') form.append('formato', fmtActual);
 
     try {
-      pf.style.width = '60%'; pt.textContent = 'Normalizando...';
+      pf.style.width = '55%'; pt.textContent = 'Normalizando y consultando BD...';
       const resp = await fetch('/' + mod + '/procesar', { method: 'POST', body: form });
       const data = await resp.json();
       if (data.error) { alert('Error: ' + data.error); btn.disabled = false; return; }
 
-      pf.style.width = '85%'; pt.textContent = 'Consultando base de datos...';
+      pf.style.width = '80%'; pt.textContent = 'Cargando resultados...';
       await cargarTabla(mod);
 
-      // Stats por modulo
+      // Stats
+      const s = data.estadisticas;
       if (mod === 'comunas') {
-        set('sc-entrada', data.estadisticas.entrada);
-        set('sc-modif',   data.estadisticas.modificados);
-        set('sc-duplic',  data.estadisticas.duplicados);
-        set('sc-result',  data.estadisticas.resultado);
+        set('sc-e', s.entrada); set('sc-m', s.modificados); set('sc-d', s.duplicados);
+        set('sc-c', s.consolidados); set('sc-nf', s.no_encontrados);
       } else if (mod === 'famosos') {
-        set('sf-entrada', data.estadisticas.entrada);
-        set('sf-duplic',  data.estadisticas.duplicados);
-        set('sf-descar',  data.estadisticas.descartados);
-        set('sf-result',  data.estadisticas.resultado);
-        set('sf-cumple',  data.estadisticas.cumpleanios_hoy);
+        set('sf-e', s.entrada); set('sf-d', s.duplicados); set('sf-de', s.descartados);
+        set('sf-r', s.resultado); set('sf-cu', s.cumpleanios_hoy);
       } else {
-        set('sl-entrada', data.estadisticas.entrada);
-        set('sl-duplic',  data.estadisticas.duplicados);
-        set('sl-result',  data.estadisticas.resultado);
+        set('sl-e', s.entrada); set('sl-d', s.duplicados); set('sl-r', s.resultado);
       }
 
       // Log
-      const logEl = document.getElementById('lp-' + mod);
-      logEl.innerHTML = data.log_preview.map(l => {
-        if (l.includes('MODIFICADO')) return `<span class="log-mod">${esc(l)}</span>`;
-        if (l.includes('DUPLICADO'))  return `<span class="log-dup">${esc(l)}</span>`;
-        if (l.includes('DESCARTADO')) return `<span class="log-desc">${esc(l)}</span>`;
-        if (l.includes('CUMPLEANOS')) return `<span class="log-cump">${esc(l)}</span>`;
-        if (l.includes('SIN CAMBIO')) return `<span class="log-sin">${esc(l)}</span>`;
+      const lel = document.getElementById('lp-' + k);
+      lel.innerHTML = data.log_preview.map(l => {
+        if (l.includes('MODIFICADO'))  return `<span class="lm">${esc(l)}</span>`;
+        if (l.includes('DUPLICADO'))   return `<span class="ld">${esc(l)}</span>`;
+        if (l.includes('DESCARTADO'))  return `<span class="lde">${esc(l)}</span>`;
+        if (l.includes('CUMPLEANOS'))  return `<span class="lc">${esc(l)}</span>`;
+        if (l.includes('SIN CAMBIO'))  return `<span class="ls">${esc(l)}</span>`;
         return esc(l);
       }).join('\n');
 
       pf.style.width = '100%'; pt.textContent = 'Completado.';
-      document.getElementById('res-' + mod).style.display = 'block';
-      document.getElementById('res-' + mod).scrollIntoView({ behavior: 'smooth' });
+      document.getElementById('res-' + k).style.display = 'block';
+      document.getElementById('res-' + k).scrollIntoView({ behavior: 'smooth' });
       btn.disabled = false;
+
+      // El mapa se carga desde su propia pestana
 
     } catch(err) { alert('Error: ' + err.message); btn.disabled = false; }
   }
 
-  // ── CARGAR TABLA ────────────────────────────────────────────────────────────
+  // ── TABLAS ────────────────────────────────────────────────────────────────────
   async function cargarTabla(mod) {
     const resp = await fetch('/' + mod + '/datos');
     const data = await resp.json();
     datos[mod] = data.datos;
-    document.getElementById('tt-' + mod).textContent = data.total;
+    const k = modKey[mod];
+    document.getElementById('tt-' + k).textContent = data.total;
     renderTabla(mod, datos[mod]);
   }
 
   function renderTabla(mod, lista) {
-    const tbody = document.getElementById('tb-' + mod);
-    document.getElementById('tv-' + mod).textContent = lista.length;
+    const k = modKey[mod];
+    document.getElementById('tv-' + k).textContent = lista.length;
+    const tb = document.getElementById('tb-' + k);
 
     if (mod === 'comunas') {
-      tbody.innerHTML = lista.map((r, i) => `<tr>
-        <td class="mono" style="color:var(--gris-medio)">${i+1}</td>
-        <td><span class="badge-id">${r.id}</span></td>
-        <td>${esc(r.nombre)}</td>
-        <td class="mono" style="color:var(--gris-medio);font-size:10px">${r.fecha_carga}</td>
+      tb.innerHTML = lista.map((r, i) => `<tr>
+        <td class="mono" style="color:var(--gris-m)">${i+1}</td>
+        <td><span class="bid">${r.id}</span></td>
+        <td style="font-weight:500">${esc(r.nombre)}</td>
+        <td style="font-size:11px">${esc(r.region || '—')}</td>
+        <td class="mono" style="font-size:11px">${r.poblacion ? Number(r.poblacion).toLocaleString('es-CL') : '—'}</td>
+        <td class="mono" style="font-size:10px;color:var(--gris-m)">${r.fecha_carga}</td>
       </tr>`).join('');
 
     } else if (mod === 'famosos') {
-      tbody.innerHTML = lista.map((r, i) => `<tr>
-        <td class="mono" style="color:var(--gris-medio)">${i+1}</td>
-        <td><span class="badge-id">${r.id}</span></td>
-        <td>${esc(r.nombre)}</td>
+      tb.innerHTML = lista.map((r, i) => `<tr>
+        <td class="mono" style="color:var(--gris-m)">${i+1}</td>
+        <td><span class="bid">${r.id}</span></td>
+        <td style="font-weight:500">${esc(r.nombre)}</td>
         <td class="mono">${r.fecha_nacimiento}</td>
         <td class="mono" style="text-align:center">${r.edad ?? '—'}</td>
-        <td style="text-align:center">${r.cumpleanios ? '<span class="badge-si">HOY</span>' : '<span class="badge-no">No</span>'}</td>
+        <td style="text-align:center">${r.cumpleanios ? '<span class="bsi">HOY</span>' : '<span class="bno">No</span>'}</td>
+        <td style="text-align:center">
+          ${r.imagen_url
+            ? `<img src="${r.imagen_url}" style="width:32px;height:32px;object-fit:cover;border-radius:4px;cursor:pointer" onclick="verImagen(${r.id},'${esc(r.nombre)}',${r.edad})">`
+            : `<button class="btn-img" onclick="verImagen(${r.id},'${esc(r.nombre)}',${r.edad})">Ver imagen</button>`
+          }
+        </td>
       </tr>`).join('');
 
     } else {
-      tbody.innerHTML = lista.map((r, i) => `<tr>
-        <td class="mono" style="color:var(--gris-medio)">${i+1}</td>
-        <td><span class="badge-id">${r.id}</span></td>
-        <td>${esc(r.nombre)}</td>
+      tb.innerHTML = lista.map((r, i) => `<tr>
+        <td class="mono" style="color:var(--gris-m)">${i+1}</td>
+        <td><span class="bid">${r.id}</span></td>
+        <td style="font-weight:500">${esc(r.nombre)}</td>
         <td class="mono" style="font-size:10px">${r.latitud ?? '—'}</td>
         <td class="mono" style="font-size:10px">${r.longitud ?? '—'}</td>
         <td style="font-size:11px">${esc(r.nombre_calle || '—')}</td>
-        <td class="mono" style="font-size:11px">${esc(r.numero_calle || '—')}</td>
         <td style="font-size:11px">${esc(r.ciudad_estado_provincia || '—')}</td>
         <td style="font-size:11px">${esc(r.pais || '—')}</td>
       </tr>`).join('');
@@ -449,14 +533,123 @@
   }
 
   function filtrar(mod) {
-    const q = document.getElementById('bq-' + mod).value.toLowerCase();
-    const filtrados = datos[mod].filter(r => r.nombre.toLowerCase().includes(q));
-    renderTabla(mod, filtrados);
+    const k = modKey[mod];
+    const q = document.getElementById('bf-' + k).value.toLowerCase();
+    renderTabla(mod, datos[mod].filter(r => r.nombre.toLowerCase().includes(q)));
   }
 
-  // ── HELPERS ────────────────────────────────────────────────────────────────
+  // ── MAPA LEAFLET ──────────────────────────────────────────────────────────────
+  function iniciarMapa() {
+    const lista = datos.lugares.filter(r => r.latitud && r.longitud);
+    document.getElementById('mapa-total').textContent = lista.length;
+
+    if (!mapaLeaflet) {
+      mapaLeaflet = L.map('mapa').setView([20, 0], 2);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 18
+      }).addTo(mapaLeaflet);
+    } else {
+      mapaLeaflet.eachLayer(layer => {
+        if (layer instanceof L.Marker) mapaLeaflet.removeLayer(layer);
+      });
+    }
+
+    lista.forEach(r => {
+      const popup = `
+        <div style="font-family:'DM Sans',sans-serif;min-width:180px">
+          <div style="font-weight:600;font-size:14px;margin-bottom:4px">${esc(r.nombre)}</div>
+          <div style="font-size:11px;color:#777;margin-bottom:8px">${esc(r.pais || '')}</div>
+          <a href="https://www.google.com/maps?q=${r.latitud},${r.longitud}" 
+             target="_blank"
+             style="display:inline-block;padding:5px 12px;background:#CC0000;color:white;border-radius:4px;font-size:11px;text-decoration:none;font-weight:500">
+            Abrir en Google Maps
+          </a>
+        </div>`;
+      L.marker([r.latitud, r.longitud])
+        .bindPopup(popup)
+        .addTo(mapaLeaflet);
+    });
+
+    setTimeout(() => mapaLeaflet.invalidateSize(), 200);
+  }
+
+  // ── IMAGEN FAMOSO ─────────────────────────────────────────────────────────────
+  async function verImagen(id, nombre, edad) {
+    const modal = document.getElementById('modal');
+    const body  = document.getElementById('modal-body');
+    modal.classList.add('on');
+    body.innerHTML = `<div class="modal-cargando">Consultando Wikipedia...</div>`;
+
+    try {
+      const resp = await fetch('/famosos/imagen/' + id);
+      const data = await resp.json();
+
+      if (data.error) {
+        body.innerHTML = `
+          <div class="modal-nombre">${esc(nombre)}</div>
+          <div class="modal-meta">${edad} años</div>
+          <div style="padding:30px;text-align:center;color:var(--gris-m);font-size:13px">
+            Imagen no disponible en Wikipedia para este personaje.
+          </div>`;
+        return;
+      }
+
+      body.innerHTML = `
+        <div class="modal-nombre">${esc(nombre)}</div>
+        <div class="modal-meta">${edad} años ${data.desde_cache ? '· imagen en cache' : '· imagen obtenida ahora'}</div>
+        <img class="modal-img" src="${data.imagen_url}" alt="${esc(nombre)}" />
+        <div class="modal-fuente">Fuente: ${esc(data.imagen_fuente)}<br>Capturada: ${esc(data.imagen_fecha)}</div>`;
+
+      // Actualizar miniatura en la tabla
+      await cargarTabla('famosos');
+
+    } catch(err) {
+      body.innerHTML = `<div class="modal-cargando">Error al obtener imagen.</div>`;
+    }
+  }
+
+  function cerrarModal(e) {
+    if (!e || e.target === document.getElementById('modal')) {
+      document.getElementById('modal').classList.remove('on');
+    }
+  }
+
+  // ── BUSCADOR LIVE COMUNAS ─────────────────────────────────────────────────────
+  let bqTimer = null;
+  async function buscarLive() {
+    clearTimeout(bqTimer);
+    const q   = document.getElementById('bq-live').value;
+    const div = document.getElementById('sugerencias');
+    if (q.length < 2) { div.style.display = 'none'; return; }
+    bqTimer = setTimeout(async () => {
+      const resp = await fetch('/comunas/buscar?q=' + encodeURIComponent(q));
+      const data = await resp.json();
+      if (!data.sugerencias.length) { div.style.display = 'none'; return; }
+      div.innerHTML = data.sugerencias.map(s => `
+        <div class="sug-item" onclick="seleccionarSugerencia('${esc(s.nombre)}')">
+          <span class="sug-nombre">${esc(s.nombre)}</span>
+          <span class="sug-meta">${esc(s.region)}<br>${Number(s.poblacion).toLocaleString('es-CL')} hab.</span>
+        </div>`).join('');
+      div.style.display = 'block';
+    }, 300);
+  }
+
+  function seleccionarSugerencia(nombre) {
+    document.getElementById('bq-live').value = nombre;
+    document.getElementById('sugerencias').style.display = 'none';
+  }
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.buscador-wrap')) {
+      document.getElementById('sugerencias').style.display = 'none';
+    }
+  });
+
+  // ── HELPERS ───────────────────────────────────────────────────────────────────
   const set  = (id, v) => { document.getElementById(id).textContent = Number(v).toLocaleString('es-CL'); };
-  const esc  = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const esc  = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const delay = ms => new Promise(r => setTimeout(r, ms));
 </script>
 </body>
 </html>
